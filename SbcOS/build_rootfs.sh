@@ -19,6 +19,7 @@ DEBDIR="$BASEDIR/deb"
 LOGDIR="$BASEDIR/log"
 IMGDIR="$BASEDIR/img"
 RFSDIR="$BASEDIR/rfs"
+INITRAMFS="${PWD}/../initramfs"
 DEBRFSDIR="$BASEDIR/deb-rfs"
 BOOTSTRAPDIR="$BASEDIR/deb-rfs/bootstrap"
 HOOKSDIR="$BINDIR/hooks"
@@ -422,7 +423,7 @@ function buildrootfs() {
 	check_exit_code
 
 	echo " | install busybox to new base rootfs"
-	install -m 755 /home/shurik/sbc-proto/initramfs/static/busybox $RFSDIR/rootfs/bin/
+	install -m 755 ${INITRAMFS}/static/busybox $RFSDIR/rootfs/bin/
 	check_exit_code
 	chroot $RFSDIR/rootfs/ /bin/busybox --install -s
 	check_exit_code

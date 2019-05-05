@@ -209,6 +209,16 @@ init_devs()
    modprobe squashfs 2>/dev/null
    modprobe -q squashfs 2>/dev/null
    modprobe fuse 2>/dev/null
+   modprobe nf_conntrack
+   modprobe x_tables
+   modprobe xt_tcpudp
+   modprobe xt_conntrack
+   modprobe nf_defrag_ipv4
+   modprobe nf_conntrack_ipv4
+   modprobe ip_tables
+   modprobe iptable_filter
+   modprobe xt_string
+   
    refresh_devs
 }
 
