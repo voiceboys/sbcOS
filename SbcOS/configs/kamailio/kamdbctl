@@ -1,0 +1,500 @@
+#!/bin/sh 
+#
+# control tool for maintaining Kamailio databases
+#
+#===================================================================
+
+### version for this script
+VERSION='4.4.0'
+
+PATH=$PATH:/
+
+# for testing only, please don't enable this in production environments
+# as this introduce security risks
+TEST="false"
+
+### include resource files, if any
+
+# check for rc file at same location with kamdbctl
+which greadlink > /dev/null 2>&1
+ret=$?
+if [ $ret -eq 0 ] ; then
+	KAMCTLFULLPATH=$(greadlink -f "$0")
+else
+	which readlink > /dev/null 2>&1
+	ret=$?
+	if [ $ret -eq 0 ] ; then
+		KAMCTLFULLPATH=$(readlink -f "$0")
+	fi
+fi
+if [ -n "$KAMCTLFULLPATH" ] ; then
+	KAMCTLDIRPATH=$(dirname "$KAMCTLFULLPATH")
+	if [ -f $KAMCTLDIRPATH/kamctlrc ]; then
+		. $KAMCTLDIRPATH/kamctlrc
+	fi
+fi
+
+# check for rc file at standard locations
+if [ -f /etc/kamailio/kamctlrc ]; then
+	. /etc/kamailio/kamctlrc
+fi
+if [ -f /etc/kamailio//kamctlrc ]; then
+	. /etc/kamailio//kamctlrc
+fi
+if [ -f ~/.kamctlrc ]; then
+	. ~/.kamctlrc
+fi
+
+if [ $TEST = "true" ]; then
+	if [ -f ./kamctlrc ]; then
+		. ./kamctlrc
+	fi
+fi
+
+
+if [ -z "$MYDIR" ] ; then
+	MYDIR=`dirname $0`
+fi
+
+if [ -z "$MYLIBDIR" ] ; then
+	MYLIBDIR="/usr/lib64/kamailio//kamctl"
+	if [ ! -d "$MYLIBDIR" ]; then
+		MYLIBDIR=$MYDIR
+	fi
+fi
+
+
+##### ------------------------------------------------ #####
+### load base functions
+#
+if [ -f "$MYLIBDIR/kamdbctl.base" ]; then
+	. "$MYLIBDIR/kamdbctl.base"
+else
+	echo -e "Cannot load core functions '$MYLIBDIR/kamdbctl.base' - exiting ...\n"
+	exit -1
+fi
+
+#
+##### ------------------------------------------------ #####
+### DBENGINE
+#
+unset USED_DBENGINE
+if [ -z "$DBENGINE" ] ; then
+	merr "database engine not specified, please setup one in the config script"
+	exit 1
+fi
+
+case $DBENGINE in
+	MYSQL|mysql|MySQL)
+		if [ -f "$MYLIBDIR/kamdbctl.mysql" ]; then
+			. "$MYLIBDIR/kamdbctl.mysql"
+			USED_DBENGINE="mysql"
+		else
+			merr "could not load the script in $MYLIBDIR/kamdbctl.mysql for database engine $DBENGINE"
+		fi
+		;;
+	PGSQL|pgsql|postgres|postgresql|POSTGRESQL)
+		if [ -f "$MYLIBDIR/kamdbctl.pgsql" ]; then
+			. "$MYLIBDIR/kamdbctl.pgsql"
+			USED_DBENGINE="postgres"
+		else
+			merr "could not load the script in $MYLIBDIR/kamdbctl.pgsql for database engine $DBENGINE"
+		fi
+		;;
+	ORACLE|oracle|Oracle)
+		if [ -f "$MYLIBDIR/kamdbctl.oracle" ]; then
+			. "$MYLIBDIR/kamdbctl.oracle"
+			USED_DBENGINE="oracle"
+		else
+			merr "could not load the script in $MYLIBDIR/kamdbctl.oracle for database engine $DBENGINE"
+		fi
+		;;
+	DBTEXT|dbtext|textdb)
+		if [ -f "$MYLIBDIR/kamdbctl.dbtext" ]; then
+			. "$MYLIBDIR/kamdbctl.dbtext"
+			USED_DBENGINE="dbtext"
+			DBNAME=$DB_PATH
+		else
+			merr "could not load the script in $MYLIBDIR/kamdbctl.dbtext for database engine $DBENGINE"
+		fi
+		;;
+	DB_BERKELEY|db_berkeley|BERKELEY|berkeley)
+		if [ -f "$MYLIBDIR/kamdbctl.db_berkeley" ]; then
+			. "$MYLIBDIR/kamdbctl.db_berkeley"
+			USED_DBENGINE="berkeley"
+			DBNAME=$DB_PATH
+		else
+			merr "could not load the script in $MYLIBDIR/kamdbctl.db_berkeley for database engine $DBENGINE"
+		fi
+		;;
+	SQLITE|sqlite)
+		if [ -f "$MYLIBDIR/kamdbctl.sqlite" ]; then
+			. "$MYLIBDIR/kamdbctl.sqlite"
+			USED_DBENGINE="sqlite"
+			DBNAME=$DB_PATH
+		else
+			merr "could not load the script in $MYLIBDIR/kamdbctl.sqlite for database engine $DBENGINE"
+		fi
+		;;
+esac
+
+if [ -z "$USED_DBENGINE" ] ; then
+	merr "database engine not loaded - tried '$DBENGINE'"
+	exit 1
+else
+	mdbg "database engine '$USED_DBENGINE' loaded"
+fi
+
+
+# dump all rows
+kamailio_dump()  # pars: <database name>
+{
+	if [ $# -ne 2 ] ; then
+		merr "kamailio_dump function takes two param"
+		exit 1
+	fi
+	if [ "$USED_DBENGINE" == "oracle" ]; then
+		oracle_dump $1 $2
+	elif [ "$PW" = "" ] ; then
+		$DUMP_CMD $1 > $2
+	else
+		$DUMP_CMD "-p$PW" $1 > $2
+	fi
+	if [ "$?" -ne 0 ]; then
+			merr "db dump failed"
+			exit 1
+	fi
+	minfo "db dump successful"
+}
+
+
+kamailio_restore() #pars: <database name> <filename>
+{
+	if [ $# -ne 2 ] ; then
+		merr "kamailio_restore function takes two params"
+		exit 1
+	fi
+	if [ "$USED_DBENGINE" == "oracle" ]; then
+		oracle_restore $1 $2
+	else
+		sql_query $1 < $2
+	fi
+	if [ "$?" -ne 0 ]; then
+			merr "db restore failed"
+			exit 1
+	fi
+	minfo "db restore successful"
+}
+
+
+kamailio_pframework_create() #pars: none
+{
+	if [ -e $DEFAULT_CFG_DIR/pi_framework_sample ] ; then
+		get_answer ask "Sample already exists. Overwrite? (y/n): "
+		if [ "$ANSWER" != "y" ]; then
+			exit 1
+		fi
+	fi
+	touch $DEFAULT_CFG_DIR/pi_framework_sample
+	if [ $? -ne 0 ] ; then
+		merr "Unable to create $DEFAULT_CFG_DIR/pi_framework_sample"
+		exit 1
+	fi
+
+	if [ -d "$DATA_DIR/xhttp_pi" ] ; then
+		PI_MODULES="$STANDARD_MODULES"
+	else
+		merr "Please install first the xhttp_pi module"
+		exit 1
+	fi
+
+
+	get_answer $INSTALL_EXTRA_TABLES "Add provisionning framework for extra tables? (y/n): "
+	if [ "$ANSWER" = "y" ]; then
+		PI_MODULES="$PI_MODULES $EXTRA_MODULES"
+	fi
+
+	get_answer $INSTALL_PRESENCE_TABLES "Add provisionning framework for presence tables? (y/n): "
+	if [ "$ANSWER" = "y" ]; then
+		PI_PRESENCE_MODULES="TRUE"
+	fi
+
+	cat $DATA_DIR/xhttp_pi/pi_framework-00 > $DEFAULT_CFG_DIR/pi_framework_sample
+	for TABLE in $PI_MODULES; do
+		if [ -e $DATA_DIR/xhttp_pi/$TABLE-table ]; then
+			cat $DATA_DIR/xhttp_pi/$TABLE-table >> $DEFAULT_CFG_DIR/pi_framework_sample
+		else
+			merr "Unable to configure: $TABLE - missing table descriptor"
+		fi
+	done
+	if [ "$PI_PRESENCE_MODULES" = "TRUE" ]; then
+		if [ -e $DATA_DIR/xhttp_pi/presence-table ]; then
+			cat $DATA_DIR/xhttp_pi/presence-table >> $DEFAULT_CFG_DIR/pi_framework_sample
+		else
+			merr "Unable to configure: presence - missing table descriptor"
+		fi
+		if [ -e $DATA_DIR/xhttp_pi/rls-table ]; then
+			cat $DATA_DIR/xhttp_pi/rls-table >> $DEFAULT_CFG_DIR/pi_framework_sample
+		else
+			merr "Unable to configure: rls - missing table descriptor"
+		fi
+	fi
+	cat $DATA_DIR/xhttp_pi/pi_framework-01 >> $DEFAULT_CFG_DIR/pi_framework_sample
+	for TABLE in $PI_MODULES; do
+		if [ -e $DATA_DIR/xhttp_pi/$TABLE-mod ]; then
+			cat $DATA_DIR/xhttp_pi/$TABLE-mod >> $DEFAULT_CFG_DIR/pi_framework_sample
+		else
+			merr "Unable to configure: $TABLE - missing mod descriptor"
+		fi
+	done
+	if [ "$PI_PRESENCE_MODULES" = "TRUE" ]; then
+		if [ -e $DATA_DIR/xhttp_pi/presence-mod ]; then
+			cat $DATA_DIR/xhttp_pi/presence-mod >> $DEFAULT_CFG_DIR/pi_framework_sample
+		else
+			merr "Unable to configure: presence - missing mod descriptor"
+		fi
+		if [ -e $DATA_DIR/xhttp_pi/rls-mod ]; then
+			cat $DATA_DIR/xhttp_pi/rls-mod >> $DEFAULT_CFG_DIR/pi_framework_sample
+		else
+			merr "Unable to configure: rls - missing mod descriptor"
+		fi
+	fi
+	cat $DATA_DIR/xhttp_pi/pi_framework-02 >> $DEFAULT_CFG_DIR/pi_framework_sample
+
+	minfo "Sample provisionning framework saved as: $DEFAULT_CFG_DIR/pi_framework_sample"
+}
+
+kamailio_pframework() #pars: <action>
+{
+	if [ $# -ne 1 ] ; then
+		merr "kamailio_pframework function takes one parameter"
+		exit 1
+	fi
+
+	case $1 in
+		create)
+			shift
+			kamailio_pframework_create "$@"
+			exit $?
+			;;
+		*)
+			merr "Unexpected pframework action: $1"
+			usage
+			exit 1
+			;;
+	esac
+}
+
+
+
+case $1 in
+	migrate)
+		if [ "$USED_DBENGINE" != "mysql" ] ; then
+			merr "$USED_DBENGINE don't support migrate operation"
+			exit 1
+		fi
+		if [ $# -ne 3 ] ; then
+			merr "migrate requires 2 parameters: old and new database"
+			exit 1
+		fi
+		# create new database
+		minfo "Creating new Database $3...."
+		NO_USER_INIT="yes"
+		kamailio_create $3
+		if [ "$?" -ne 0 ] ; then
+			echo "migrate: creating new database failed"
+			exit 1
+		fi
+		# migrate data
+		minfo "Migrating data from $2 to $3...."
+		migrate_db $2 $3
+		minfo "Migration successfully completed."
+		exit 0;
+		;;
+	copy)
+		# copy database to some other name
+		if [ "$USED_DBENGINE" == "berkeley" -o "$USED_DBENGINE" == "dbtext" ] ; then
+			merr "$USED_DBENGINE don't support this operation"
+			exit 1
+		fi
+		shift
+		if [ $# -ne 1 ]; then
+			usage
+			exit 1
+		fi
+		if [ "$USED_DBENGINE" = "sqlite" ]; then
+			cp $DB_PATH $1
+			exit $?
+		fi
+		tmp_file=`mktemp /tmp/kamdbctl.XXXXXXXXXX` || exit 1
+		kamailio_dump $DBNAME $tmp_file
+		ret=$?
+		if [ "$ret" -ne 0 ]; then
+			rm $tmp_file
+			exit $ret
+		fi
+		NO_USER_INIT="yes"
+		kamailio_create $1
+		ret=$?
+		if [ "$ret" -ne 0 ]; then
+			rm $tmp_file
+			exit $ret
+		fi
+		kamailio_restore $1 $tmp_file
+		ret=$?
+		rm -f $tmp_file
+		exit $ret
+		;;
+	backup)
+		if [ "$USED_DBENGINE" == "berkeley" -o "$USED_DBENGINE" == "dbtext" ] ; then
+			merr "$USED_DBENGINE don't support this operation"
+			exit 1
+		fi
+		# backup current database
+		shift
+		if [ $# -ne 1 ]; then
+			usage
+			exit 1
+		fi
+		kamailio_dump $DBNAME $1
+		exit $?
+		;;
+	restore)
+		if [ "$USED_DBENGINE" == "berkeley" -o "$USED_DBENGINE" == "dbtext" ] ; then
+			merr "$USED_DBENGINE don't support this operation"
+			exit 1
+		fi
+		# restore database from a backup
+		shift
+		if [ $# -ne 1 ]; then
+			usage
+			exit 1
+		fi
+		kamailio_restore $DBNAME $1
+		exit $?
+		;;
+	create)
+		# create new database structures
+		shift
+		if [ $# -eq 1 ] ; then
+			DBNAME="$1"
+		fi
+
+		kamailio_create $DBNAME
+		exit $?
+		;;
+	presence)
+		presence_create $DBNAME
+		exit $?
+		;;
+	extra)
+		extra_create $DBNAME
+		exit $?
+		;;
+	dbuid)
+		dbuid_create $DBNAME
+		exit $?
+		;;
+	drop)
+		# delete kamailio database
+		# create new database structures
+		shift
+		if [ $# -eq 1 ] ; then
+			DBNAME="$1"
+		fi
+
+		kamailio_drop $DBNAME
+		exit $?
+		;;
+	reinit)
+		# delete database and create a new one
+		# create new database structures
+		shift
+		if [ $# -eq 1 ] ; then
+			DBNAME="$1"
+		fi
+		kamailio_drop $DBNAME
+		ret=$?
+		if [ "$ret" -ne 0 ]; then
+			exit $ret
+		fi
+		kamailio_create $DBNAME
+		exit $?
+		;;
+	dbonly)
+		# create only an empty database
+		if [ "$USED_DBENGINE" != "mysql" ] ; then
+			merr "$USED_DBENGINE db engine doesn't support this operation"
+			exit 1
+		fi
+		shift
+		if [ $# -eq 1 ] ; then
+			DBNAME="$1"
+		fi
+
+		kamailio_db_create $DBNAME
+		exit $?
+		;;
+	grant)
+		# grant privileges to database
+		if [ "$USED_DBENGINE" != "mysql" ] ; then
+			merr "$USED_DBENGINE db engine doesn't support this operation"
+			exit 1
+		fi
+		shift
+		if [ $# -eq 1 ] ; then
+			DBNAME="$1"
+		fi
+
+		kamailio_db_grant $DBNAME
+		exit $?
+		;;
+	revoke)
+		# revoke privileges to database
+		if [ "$USED_DBENGINE" != "mysql" ] ; then
+			merr "$USED_DBENGINE db engine doesn't support this operation"
+			exit 1
+		fi
+		shift
+		if [ $# -eq 1 ] ; then
+			DBNAME="$1"
+		fi
+
+		kamailio_db_revoke $DBNAME
+		exit $?
+		;;
+	add-tables)
+		if [ "$USED_DBENGINE" != "mysql" ] ; then
+			merr "$USED_DBENGINE don't support add-tables operation"
+			exit 1
+		fi
+		if [ $# -ne 2 ] ; then
+			merr "add-tables requires 1 parameter: group id of tables"
+			exit 1
+		fi
+		if [ -z "$DBNAME" ] ; then
+			merr "DBNAME is not set"
+			exit 1
+		fi
+
+		kamailio_add_tables $DBNAME $2
+		exit $?
+		;;
+	bdb|db_berkeley)
+		shift
+		kamailio_berkeley "$@"
+		exit $?
+		;;
+	pframework)
+		shift
+		kamailio_pframework "$@"
+		exit $?
+		;;
+	version)
+		echo  "$0 $VERSION"
+		;;
+	*)
+		usage
+		exit 1;
+		;;
+esac

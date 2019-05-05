@@ -1,0 +1,124 @@
+#!/bin/sh
+
+COUNTER=0
+CONFIGURE_INTERFACES=yes
+EXCLUDE_INTERFACES="eth8"
+VERBOSE=no
+
+verbose=""
+[ "$VERBOSE" = yes ] && verbose=-v
+
+process_exclusions() {
+    set -- $EXCLUDE_INTERFACES
+    exclusions=""
+    for d
+    do
+        exclusions="-X $d $exclusions"
+    done
+    echo $exclusions
+}
+
+apply_network () {
+
+        if [ ! -f "/etc/network/interfaces" ]
+        then
+                return 1
+        fi
+
+	/sbin/ifup -a --exclude=lo --exclude=${EXCLUDE_INTERFACES} ${verbose}
+	/sbin/route delete default gw 10.255.3.1	        
+
+        return 0;
+}
+
+ifup_hotplug () {
+    if [ -d /sys/class/net ]
+    then
+    
+            ifaces=$(for iface in $(ifquery --list --allow=hotplug)
+                            do
+                                    link=${iface##:*}
+                                    link=${link##.*}
+                                    if [ -e "/sys/class/net/$link" ]
+                                    then
+                                        # link detection does not work unless we up the link
+                                        ip link set "$iface" up || true
+                                        if [ "$(cat /sys/class/net/$link/operstate)" = up ]
+                                        then
+                                            echo "$iface"
+                                        fi
+                                    fi
+                            done)
+
+            if [ -n "$ifaces" ]
+            then
+            	echo "Interfaces hotplug post : $ifaces....";
+                ifup $ifaces "$@" ${verbose} || true
+            fi
+    fi
+}
+
+case "$1" in
+start)
+
+        if [ "$CONFIGURE_INTERFACES" = no ]
+        then
+            echo "Not configuring network interfaces"
+            exit 0
+        fi
+        set -f
+        exclusions=$(process_exclusions)
+        echo "Configuring network interfaces"
+	if [ -x /sbin/udevadm ]; then
+                if [ -n "$(ifquery --list --exclude=lo)" ] || [ -n "$(ifquery --list --allow=hotplug)" ]; then
+                        udevadm settle || true
+                fi
+        fi
+	
+        apply_network;
+        ifup_hotplug;
+        ;;
+
+stop)
+        echo "Deconfiguring network interfaces"
+	#ip addr flush dev bond0:1;
+        if ifdown -a --exclude=lo --exclude=${EXCLUDE_INTERFACES}; then
+            echo $?
+        else
+            echo $?
+        fi
+        ;;
+reload)
+        echo "Reloading network interfaces configuration"
+        state=$(ifquery --state)
+        ifdown -a --exclude=lo --exclude=${EXCLUDE_INTERFACES} || true
+        if ifup --exclude=lo --exclude=${EXCLUDE_INTERFACES} ${verbose} $state ; then
+            echo $?
+        else
+            echo $?
+        fi
+        ;;
+
+force-reload|restart)
+
+        echo "Running $0 $1 is deprecated because it may not re-enable some interfaces"
+        echo "Reconfiguring network interfaces"
+        ifdown -a --exclude=lo --exclude=${EXCLUDE_INTERFACES} || true
+        set -f
+        exclusions=$(process_exclusions)
+        if ifup -a --exclude=lo --exclude=${EXCLUDE_INTERFACES} ${verbose} && ifup_hotplug --exclude=${EXCLUDE_INTERFACES}  
+        then
+            echo $?
+        else
+            echo $?
+        fi
+        ;;
+
+*)
+        echo "Usage: /etc/init.d/networking-interfaces {start|stop|reload|restart|force-reload}"
+        exit 1
+        ;;
+esac
+
+
+exit 0

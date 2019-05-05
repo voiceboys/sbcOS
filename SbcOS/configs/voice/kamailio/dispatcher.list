@@ -1,0 +1,9 @@
+# line format
+# setit(integer) destination(sip uri) flags (integer, optional)
+# LOCAL ACCESS - Untrusted from Internet
+201 sip:192.168.1.4:5060 0 0 access=10.1.1.4:5060;socket=udp:10.1.1.4:5060;weight=100
+#Trusted
+# Reg03
+301 sip:172.168.5.152:5060 0 5 access=192.168.1.4:5060;socket=udp:10.1.1.4:5060;weight=50
+# Reg02
+301 sip:172.168.91.46:5060 0 10 access=192.168.1.4:5060;socket=udp:10.1.1.4:5060;weight=100

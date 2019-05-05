@@ -1,0 +1,171 @@
+#!/bin/sh -e
+# Script to add global static routes to the system
+#
+# 
+### BEGIN INIT INFO
+# Provides:          networking-routes
+# Required-Start:    $network $local_fs
+# Required-Stop:     $local_fs
+# Default-Start:     S
+# Default-Stop:      
+# Short-Description: Establish global networking routes for the system
+# Description:       Define global network routes for the system using
+#                    the configuration defined in /etc/network/routes
+#                    Global routes can be either routes for which
+#                    the associated interface cannot be determined
+#                    beforehand (maybe the device name is not known)
+#                    or 'reject' routes to prevent the system from
+#                    communicating with remote networks.
+### END INIT INFO
+#
+# Copyright (c) 2011 Javier Fernandez-Sanguino <jfs@debian.org>
+#
+# Some portions (specifically the code of the run_route() function) are derived
+# from the ifup-route script in SuSE's sysconfig package.
+# These portions are:
+#
+# - Copyright (c) 2002 SuSE Linux AG Nuernberg, Germany. All rights reserved.
+# -  Author: Christian Zoz <zoz@suse.de>, 2002
+# -  Based on rcroute: Burchard Steinbild <bs@suse.de>, 1996
+#                Werner Fink <werner@suse.de>, 1996-2000
+#
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+# Place, Suite 330, Boston, MA 02111-1307 USA
+#
+
+[ -x /sbin/route ] || exit 0
+ROUTEFILE="/etc/network/routes"
+# Abort (without error) if the configuration file does not exist
+[ ! -r "$ROUTEFILE" ] && exit 0
+
+. /lib/lsb/init-functions
+# Default value
+VERBOSITY=${VERBOSITY:-0}
+
+# Functions to read the route file and process it
+
+
+run_route() {
+	local COMMAND="route $*"
+	export LC_MESSAGES=C # We need the return messages to be in english
+        RETMESSAGE="$($COMMAND 2>&1)"
+        RETVALUE=$?
+        if test $RETVALUE -ne 0 ; then
+                [ "$VERBOSITY" -eq 1 ] && echo "DEBUG: calling: '$COMMAND' FAILED"
+		# Process the messages and omits those that are not
+		# relevant.
+                case "$RETMESSAGE" in
+		# Omit 'File exists' since the route is already there..
+                        *File*exists) return ;;
+		# 'No such process' is only omitted if the route is being
+		# deleted.  If the route is being created, this error message
+		# might appear if the gateway is not reachable.
+                        *No*such*process) [ "$1" = "del" ] && return ;;
+                        *)
+                esac
+                log_failure_msg "Error while executing:" \
+                         "  Command '$COMMAND' returned:  ${RETMESSAGE%%Usage:*}"\
+                         "  Configuration line: $LINE"
+        else
+                [ "$VERBOSITY" -eq 1 ] && echo "DEBUG: calling: '$COMMAND' SUCCEEDED"
+        fi
+
+
+
+} 
+
+del_global_routes() {
+        ret=0
+	cat $ROUTEFILE | egrep "^[^#].*any$" | 
+	while read network netmask gateway interface ; do
+            if [ -n "$interface" ] && [ -n "$network" ] && [ -n "$netmask" ] && [ -n "$gateway" ] ; then
+                if [ "$gateway" != "reject" ] ; then
+                    [ "$VERBOSITY" -eq 1 ] && echo "DEBUG: Deleting global route for $network / $netmask through gateway $gateway"
+                    run_route del -net $network netmask $netmask gw $gateway 
+                    [ $? -ne 0 ] && ret=$?
+                else
+                    [ "$VERBOSITY" -eq 1 ] && echo "DEBUG: Deleting reject route for $network / $netmask"
+                    run_route del -net $network netmask $netmask reject
+                    [ $? -ne 0 ] && ret=$?
+                fi
+
+            else
+                echo "ERROR: Incorrect line for global network routes in $ROUTEFILE: '$network $netmask $gateway $interface'"
+                ret=1
+            fi
+	done
+        return $ret
+}
+
+add_global_routes() {
+        ret=0
+	cat $ROUTEFILE | egrep "^[^#].*any$" | 
+	while read network netmask gateway interface ; do
+            if [ -n "$interface" ] && [ -n "$network" ] && [ -n "$netmask" ] && [ -n "$gateway" ] ; then
+                if [ "$gateway" != "reject" ] ; then
+		    [ "$VERBOSITY" -eq 1 ] && echo "DEBUG: Adding global route for $network / $netmask through gateway $gateway"
+        	    run_route add -net $network netmask $netmask gw $gateway
+                    [ $? -ne 0 ] && ret=$?
+                else
+                    [ "$VERBOSITY" -eq 1 ] && echo "DEBUG: Adding global reject route for $network / $netmask"
+                    run_route add -net $network netmask $netmask reject
+                    [ $? -ne 0 ] && ret=$?
+                fi
+
+            else
+                echo "ERROR: Incorrect line for global network routes in $ROUTEFILE: '$network $netmask $gateway $interface'"
+                ret=1
+            fi
+	done
+        return $ret
+}
+
+case "$1" in
+start)
+	log_action_begin_msg "Configuring network routes"
+	if add_global_routes; then
+	    log_action_end_msg $?
+	else
+	    log_action_end_msg $?
+	fi
+	;;
+
+stop)
+	log_action_begin_msg "Deconfiguring network routes"
+	if del_global_routes; then
+	    log_action_end_msg $?
+	else
+	    log_action_end_msg $?
+	fi
+	;;
+
+reload|force-reload|restart)
+	log_action_begin_msg "Reconfiguring network routes"
+        del_global_routes
+	if add_global_routes; then
+	    log_action_end_msg $?
+	else
+	    log_action_end_msg $?
+	fi
+	;;
+
+*)
+	echo "Usage: /etc/init.d/networking-routes {start|stop|restart|reload}"
+	exit 1
+	;;
+esac
+
+exit 0
+

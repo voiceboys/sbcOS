@@ -1,0 +1,25 @@
+iface lo inet loopback
+
+#MASTER - INTRANET
+
+# The primary network interface
+auto eth0
+iface eth0 inet static
+    address 10.0.0.101
+    netmask 255.255.255.0
+    gateway 10.0.0.254
+    dns-nameservers 10.0.0.254 8.8.8.8
+
+auto eth0:1
+iface eth0:1 inet static
+    address 192.168.1.4
+    netmask 255.255.255.254
+
+auto eth0:2
+iface eth0:2 inet static
+    address 10.1.1.4
+    netmask 255.255.255.254
+
+#auto eth4
+#iface eth4 inet dhcp
+

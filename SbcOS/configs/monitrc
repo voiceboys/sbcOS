@@ -1,0 +1,105 @@
+###############################################################################
+## Monit control file
+###############################################################################
+set daemon 10 with start delay 20  
+set pidfile /var/run/monit.pid
+set logfile syslog facility log_daemon                       
+set idfile /var/lib/monit/id
+set statefile /var/lib/monit/state
+
+set mailserver ##EMAILGATEWAY##
+
+#
+# set mailserver mail.bar.baz,               # primary mailserver
+#                backup.bar.baz port 10025,  # backup mailserver on port 10025
+#                localhost                   # fallback relay
+#
+#
+#set eventqueue basedir /var/lib/monit/events slots 100   
+## optionally limit the queue size
+
+## Monit by default uses the following format for alerts if the the mail-format
+## statement is missing::
+## --8<--
+## set mail-format {
+##      from: monit@$HOST
+##   subject: monit alert --  $EVENT $SERVICE
+##   message: $EVENT Service $SERVICE
+##                 Date:        $DATE
+##                 Action:      $ACTION
+##                 Host:        $HOST
+##                 Description: $DESCRIPTION
+##
+##            Your faithful employee,
+##            Monit
+## }
+## --8<--
+##
+#set mail-format { from: admin@yourhost.de }
+#Email
+#set alert admin@yourhost.de       # receive all alerts
+
+## Do not alert when Monit starts, stops or performs a user initiated action.
+## This filter is recommended to avoid getting alerts for trivial cases.
+#
+# set alert your-name@your.domain not on { instance, action }
+#
+#
+set httpd port 2812 and
+    use address localhost  # only accept connection from localhost
+    allow localhost        # allow localhost to connect to the server and
+#    allow admin:monit      # require user 'admin' with password 'monit'
+#    allow @monit           # allow users of group 'monit' to connect (rw)
+#    allow @users readonly  # allow users of group 'users' to connect readonly
+#
+###############################################################################
+## Services
+###############################################################################
+##
+## Check general system resources such as load average, cpu and memory
+## usage. Each test specifies a resource, conditions and the action to be
+## performed should a test fail.
+#
+check system ##HOST##
+    if loadavg (1min) > 4 then alert
+    if loadavg (5min) > 2 then alert
+    if memory usage > 75% then alert
+    if swap usage > 25% then alert
+    if cpu usage (user) > 70% then alert
+    if cpu usage (system) > 30% then alert
+    if cpu usage (wait) > 20% then alert
+
+#    
+check device root with path /
+        if space usage > 95% then alert
+        if inode usage > 1000000 then alert
+
+check process sshd with pidfile /var/run/sshd.pid
+    start program = "/etc/init.d/ssh start"
+    stop  program = "/etc/init.d/ssh stop"
+    if 5 restarts within 5 cycles then timeout
+
+check process rsyslogd with pidfile /var/run/rsyslogd.pid
+    start program = "/etc/init.d/rsyslog start"
+    stop  program = "/etc/init.d/rsyslog stop"
+    if 5 restarts within 5 cycles then timeout
+
+check process ntpd with pidfile /var/run/ntpd.pid
+    start program = "/etc/init.d/ntp start"
+    stop  program = "/etc/init.d/ntp stop"
+    if 5 restarts within 5 cycles then timeout
+
+check process kamailio with pidfile /var/run/kamailio/kamailio.pid
+    start program = "/etc/init.d/kamailio start"
+    stop  program = "/etc/init.d/kamailio stop"
+    if 5 restarts within 5 cycles then timeout
+
+check process rtpengine with pidfile /var/run/ngcp-rtpengine-daemon.pid
+    start program = "/etc/init.d/rtpengine start"
+    stop  program = "/etc/init.d/rtpengine stop"
+    if 5 restarts within 5 cycles then timeout
+
+check process telegraf with pidfile /var/run/telegraf.pid
+    start program = "/etc/init.d/telegraf start"
+    stop  program = "/etc/init.d/telegraf stop"
+    if 5 restarts within 5 cycles then timeout

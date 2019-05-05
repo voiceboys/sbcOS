@@ -1,0 +1,15 @@
+::sysinit:/etc/init.d/rcS S boot
+::shutdown:/etc/init.d/rcS K shutdown
+::askfirst:-/bin/login
+# Start an "askfirst" shell on /dev/tty2-4
+#tty2::askfirst:-/bin/sh
+#tty3::askfirst:-/bin/sh
+#tty4::askfirst:-/bin/sh
+#tty0::askfirst:/bin/sh
+#tty0::askfirst:-/bin/sh
+#::respawn:/sbin/getty -L ttyS0 115200 vt100
+#ttyS0::askfirst:/bin/login
+#tty1::askfirst:/bin/login
+#::askconsole:/bin/login
+#::console:/bin/login
+

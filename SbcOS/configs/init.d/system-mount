@@ -1,0 +1,41 @@
+#!/bin/ash
+
+# Quick start-stop-daemon example, derived from Debian /etc/init.d/mount
+set -e
+umask 022
+#
+NAME=mount-system
+
+export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
+
+case "$1" in
+  start)
+        echo -n "Mounting: "$NAME
+	mount -t proc procfs /proc
+	mount -t sysfs sysfs /sys
+	mkdir -p /dev/pts
+	mount -t devpts none /dev/pts
+	mount -t tmpfs nodev,nosuid,mode=1777 /tmp
+        echo "."
+	;;
+  stop)
+        echo -n "Umounting: "$NAME
+	umount /proc	
+	umount /sys	
+	umount /dev/pts
+	umount /dev/tmp			
+        echo "."
+	;;
+  restart)
+        echo -n "Restarting mount: "$NAME
+        stop
+        start
+	echo "."
+	;;
+
+  *)
+	echo "Usage: "$1" {start|stop|restart}"
+	exit 1
+esac
+
+exit 0

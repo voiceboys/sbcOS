@@ -1,0 +1,34 @@
+# This configuration file is read by the static-routes if-updown script
+# and the /etc/init.d/networking-routes script to setup a list of 
+# routes associated either with a given interface or global routes.
+#
+# DO NOT configure default gateway routes for interfaces here, they should be
+# configured in the /etc/network/interfaces ('gateway' option) instead
+#
+# This file includes a list of routes for different networks following
+# the format: # Network Netmask Gateway Interface
+#
+# Example:
+# 172.1.1.0 255.255.255.0 192.168.0.1 eth0
+#
+# 
+# If you want to add a route that will be added regardless of interfaces
+# you will have to use the 'any' interface. This can be handy if you want
+# to share the same configuration file between different machines in which
+# the kernel names given to interfaces vary.
+# 
+# It is also useful to add a 'reject' route that is not assigned to any
+# interface. 
+#
+# For example:
+#
+# 172.1.1.0 255.255.255.0 192.168.0.1 any
+# 10.0.0.0 255.0.0.0 reject any
+#
+#
+# This file is read by:
+#
+#   - /etc/network/if-up.d/20static-routes when an interface is configured
+#
+#   - /etc/init.d/networking-routes to add the 'all' interfaces routes
+10.255.2.0 255.255.255.0 10.255.2.1 eth4

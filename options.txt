@@ -1,0 +1,5 @@
+from=	Load SBC data from specified directory or even from an ISO file	from=/sbc/ from=/Downloads/sbc.iso from=http://domain.com/sbc.iso
+nosound	Mute sound on startup	nosound
+toram	Activate Copy to RAM feature	sbc.flags=toram
+perch	Activate Persistent Changes feature	sbc.flags=toram,perch
+debug	Enable Slax startup debugging	debug

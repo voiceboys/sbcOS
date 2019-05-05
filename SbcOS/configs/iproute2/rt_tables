@@ -1,0 +1,15 @@
+#
+# reserved values
+#
+255	local
+254	main
+253	default
+0	unspec
+#
+# local
+#
+#1	inr.ruhep
+70	homer
+10	trusted1
+11	trusted2
+12	trusted3

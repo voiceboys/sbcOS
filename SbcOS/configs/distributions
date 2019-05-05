@@ -1,0 +1,7 @@
+Codename: sbc-repository
+Suite: unstable
+Architectures: amd64 source
+Components: main
+DebIndices: Packages Release . .gz .bz2
+DscIndices: Sources Release . .gz .bz2
+Description: SBC Repository for sbc appliances

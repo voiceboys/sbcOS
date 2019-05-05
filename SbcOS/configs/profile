@@ -1,0 +1,5 @@
+export PS1='\u@\H:\w\$ '
+alias dir='ls -Alp'
+alias cls='clear'
+alias ls='ls --color=always'
+alias w='who'

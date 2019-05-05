@@ -1,0 +1,49 @@
+#!/bin/ash
+
+# Quick start-stop-daemon example, derived from Debian /etc/init.d/mount
+set -e
+umask 022
+#
+NAME=modprobe-system
+
+export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
+
+case "$1" in
+  start)
+        echo -n "Starting: "$NAME
+
+        echo -e "Forwarding..."
+	sysctl -w net.ipv4.ip_forward=1
+
+	modprobe nf_conntrack
+	modprobe x_tables
+	modprobe xt_tcpudp
+	modprobe xt_conntrack
+	modprobe nf_defrag_ipv4
+	modprobe nf_conntrack_ipv4
+	modprobe ip_tables
+	modprobe iptable_filter
+	modprobe xt_string
+	#modprobe usbkbd
+	modprobe usbhid
+	#RTPEGNINE
+	modprobe xt_RTPENGINE
+        echo "."
+	;;
+  stop)
+        echo -n "Stopping: "$NAME
+        echo "."
+	;;
+  restart)
+        echo -n "Restarting: "$NAME
+        stop
+        start
+	echo "."
+	;;
+
+  *)
+	echo "Usage: "$1" {start|stop|restart}"
+	exit 1
+esac
+
+exit 0

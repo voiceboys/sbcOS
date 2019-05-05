@@ -1,0 +1,64 @@
+#!/bin/sh
+
+[ "$VERBOSITY" = 1 ] && set -x
+
+[ "$ADDRFAM" = meta ] && exit 0
+
+sysfs()
+{
+	# Called with :
+	# $1 = basename of the file in bonding/ to write to.
+	# $2 = value to write. Won't write if $2 is empty.
+	if [ "$2" ] ; then
+		echo "$2" > "/sys/class/net/$IFACE/master/bonding/$1"
+		return $?
+	fi
+	return 0
+}
+
+sysfs_remove_all()
+{
+	# Called with:
+	# $1 = target filename
+	read values < "/sys/class/net/$IFACE/bonding/$1"
+	for value in $values ; do 
+		echo "-$value" > "/sys/class/net/$IFACE/bonding/$1"
+	done
+}
+
+BOND_PARAMS="/sys/class/net/$IFACE/bonding"
+
+# free $IFACE if it is currently enslaved to a bonding device.
+if [ -f "/sys/class/net/$IFACE/master/bonding/slaves" ] ; then
+	echo "-$IFACE" > "/sys/class/net/$IFACE/master/bonding/slaves"
+
+	# The first slave in bond-primary found in current slaves becomes the primary.
+	# If no slave in bond-primary is found, then primary does not change and might be undefined if just removed.
+	for slave in $IF_BOND_PRIMARY ; do
+		if grep -sq "\\<$slave\\>" "/sys/class/net/$IFACE/master/bonding/slaves" ; then
+			sysfs primary "$slave"
+			break
+		fi
+	done
+fi
+
+# If $IFACE is not a master, exit.
+[ ! -f "$BOND_PARAMS/slaves" ] && exit
+
+# Unset multivalue sysfs entries, so that re-enabling the interface later won't cause error.
+
+sysfs_remove_all arp_ip_target
+
+# Remove any slaves of $IFACE.
+
+[ "$VERBOSITY" = 1 ] && v=-v
+read slaves < "$BOND_PARAMS/slaves"
+for slave in $slaves ; do
+	# This is supposed to have the side effect of freeing the interface.
+	ifquery --state $slave && ifdown $v $slave
+
+	# Anyway, ensure $slave is free.
+	if [ -f "/sys/class/net/$slave/master/bonding/slaves" ] ; then
+		echo "-$slave" > "$BOND_PARAMS/slaves" 2> /dev/null
+	fi
+done

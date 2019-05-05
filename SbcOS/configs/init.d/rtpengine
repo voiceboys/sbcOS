@@ -1,0 +1,171 @@
+#!/bin/sh
+
+# Quick start-stop-daemon example, derived from Debian /etc/init.d/ssh
+# Must be a valid filename
+NAME=ngcp-rtpengine-daemon
+PIDFILE=/var/run/$NAME.pid
+DESC="RTP/media proxy"
+DEFAULTS=/etc/default/${NAME}
+DAEMON=/usr/sbin/rtpengine
+CONFIG=/etc/rtpengine/rtpengine.conf
+DAEMON_OPTS=""
+TABLE=0
+
+test -f $DAEMON || exit 0
+
+export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
+
+[ -z "$PIDFILE" ] && PIDFILE="/var/run/rtpengine.pid"
+
+set -e
+
+OPTIONS="--config-file ${CONFIG}"
+
+OPTIONS="$OPTIONS --table=$TABLE"
+
+if test "$FORK" = "no" ; then
+	OPTIONS="$OPTIONS --foreground"
+fi
+
+if test "$LOG_STDERR" = "yes" ; then
+	OPTIONS="$OPTIONS --log-stderr"
+fi
+
+if [ -x /usr/sbin/ngcp-virt-identify ]; then
+	if /usr/sbin/ngcp-virt-identify --type container; then
+		VIRT="yes"
+	fi
+fi
+
+case "$1" in
+  start)
+	set +e
+	if [ -x "/usr/sbin/ngcp-check_active" ]; then
+	  /usr/sbin/ngcp-check_active -q
+	  status=$?
+	  case "${status}" in
+	    0|3)
+	      echo "Active node or transition."
+	      ;;
+	    *)
+	      echo "Ignored start action in inactive node ($status)"
+	      exit 0
+	      ;;
+	  esac
+	fi
+	echo -n "Starting $DESC: $NAME"
+	if [ "$TABLE" -ge 0 ] && [ "$VIRT" != "yes" ]; then
+		set +e
+		modprobe xt_RTPENGINE
+		if [ -e /proc/rtpengine/control ]; then
+			echo "del $TABLE" > /proc/rtpengine/control 2>/dev/null
+		fi
+
+		if [ "$CREATE_IPTABLES_CHAIN" != "no" ]; then
+			iptables -N rtpengine 2> /dev/null
+			iptables -D INPUT -j rtpengine 2> /dev/null
+			iptables -I INPUT -j rtpengine
+			ip6tables -N rtpengine 2> /dev/null
+			ip6tables -D INPUT -j rtpengine 2> /dev/null
+			ip6tables -I INPUT -j rtpengine
+		fi
+		if iptables -C INPUT -j rtpengine 1> /dev/null 2> /dev/null && iptables -n --list rtpengine 1> /dev/null 2> /dev/null; then
+			iptables -D rtpengine -p udp -j RTPENGINE --id "$TABLE" 2>/dev/null
+			iptables -I rtpengine -p udp -j RTPENGINE --id "$TABLE"
+			ip6tables -D rtpengine -p udp -j RTPENGINE --id "$TABLE" 2>/dev/null
+			ip6tables -I rtpengine -p udp -j RTPENGINE --id "$TABLE"
+		else
+			echo ""
+			echo "Missing rtpengine iptables chain - not starting"
+			exit 0
+		fi
+		set -e
+	fi
+
+	start-stop-daemon --start --quiet --pidfile $PIDFILE \
+		--exec $DAEMON -- $OPTIONS || echo -n " already running"
+        echo "."
+	;;
+  stop)
+        echo -n "Stopping daemon: "$NAME
+
+	start-stop-daemon --oknodo --stop --quiet --pidfile $PIDFILE \
+		--exec $DAEMON
+	if [ "$?" -ne 0 ]; then
+		return $?
+	fi
+	if [ "$TABLE" -ge 0 ] && [ "$VIRT" != "yes" ]; then
+		set +e
+		if [ -e /proc/rtpengine/control ]; then
+			echo "del $TABLE" > /proc/rtpengine/control 2>/dev/null
+		fi
+		iptables -D rtpengine -p udp -j RTPENGINE --id "$TABLE" 2>/dev/null
+		ip6tables -D rtpengine -p udp -j RTPENGINE --id "$TABLE" 2>/dev/null
+		rmmod xt_RTPENGINE 2>/dev/null
+		set -e
+	fi
+
+	rm -f $PIDFILE
+        echo "."
+	;;
+  restart)
+	echo -n "Restarting $DESC: $NAME"
+	start-stop-daemon --oknodo --stop --quiet --pidfile \
+		$PIDFILE --exec $DAEMON
+	if [ "$?" -ne 0 ]; then
+		return $?
+	fi
+	rm -f $PIDFILE
+	if [ -x "/usr/sbin/ngcp-check_active" ]; then
+	  /usr/sbin/ngcp-check_active -q
+	  status=$?
+	  case "${status}" in
+	    0|3)
+	      echo "Active node or transition."
+	      ;;
+	    *)
+	      echo "Ignored start action in inactive node ($status)"
+	      exit 0
+	      ;;
+	  esac
+	fi
+	if [ "$TABLE" -ge 0 ] && [ "$VIRT" != "yes" ]; then
+		sleep 1
+		set +e
+		if [ -e /proc/rtpengine/control ]; then
+			echo "del $TABLE" > /proc/rtpengine/control 2>/dev/null
+		fi
+		rmmod xt_RTPENGINE 2>/dev/null
+		modprobe xt_RTPENGINE
+		if [ "$CREATE_IPTABLES_CHAIN" != "no" ]; then
+			iptables -D INPUT -j rtpengine 2> /dev/null
+			ip6tables -D INPUT -j rtpengine 2> /dev/null
+			iptables -N rtpengine 2> /dev/null
+			iptables -I INPUT -j rtpengine
+			ip6tables -N rtpengine 2> /dev/null
+			ip6tables -I INPUT -j rtpengine
+		fi
+		if iptables -C INPUT -j rtpengine 1> /dev/null 2> /dev/null && iptables -n --list rtpengine 1> /dev/null 2> /dev/null; then
+			ip6tables -D rtpengine -p udp -j RTPENGINE --id "$TABLE" 2>/dev/null
+			iptables -D rtpengine -p udp -j RTPENGINE --id "$TABLE" 2>/dev/null
+			iptables -I rtpengine -p udp -j RTPENGINE --id "$TABLE"
+			ip6tables -I rtpengine -p udp -j RTPENGINE --id "$TABLE"
+		else
+			echo ""
+                        echo "Missing rtpengine iptables chain - not starting"
+                        exit 0
+		fi
+		set -e
+	fi
+	sleep 1
+	start-stop-daemon --start --quiet --pidfile \
+		$PIDFILE --exec $DAEMON  -- $OPTIONS
+	echo "."
+	;;
+
+  *)
+	echo "Usage: "$1" {start|stop|restart}"
+	exit 1
+esac
+
+exit 0

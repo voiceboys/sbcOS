@@ -1,0 +1,42 @@
+#!/bin/sh
+
+apply_firewall () {
+
+        echo "Apply firewall"        
+	/sbin/iptables-restore < /etc/firewall.conf	
+
+        return 0;
+}
+
+flush_firewall() {
+
+	echo "Flushing firewall"
+	/sbin/iptables -F
+	return 0;
+}
+
+
+
+case "$1" in
+start)
+	apply_firewall
+        ;;
+
+stop)
+
+	flush_firewall
+        ;;
+reload)
+
+	flush_firewall;
+	apply_firewall;
+        ;;
+
+*)
+        echo "Usage: /etc/init.d/firewall {start|stop|reload}"
+        exit 1
+        ;;
+esac
+
+
+exit 0

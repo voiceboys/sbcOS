@@ -1,0 +1,9 @@
+#!/bin/ash
+
+echo "Starting rootfs..."
+
+/etc/init.d/rcS
+
+# shell
+
+

@@ -1,0 +1,27 @@
+#!/bin/ash
+
+run_scripts() {
+        for i in /etc/rc.d/*; do
+        	echo "Script $i"
+                [ -x $i ] && $i start 2>&1
+        done | $LOGGER
+}
+
+#system_config() {
+#        config_get_bool foreground $1 foreground 0
+#}
+#
+
+LOGGER="cat"
+[ -x /usr/bin/logger ] && LOGGER="logger -s -p 6 -t sysinit"
+
+echo "Starting rootFS..."
+
+run_scripts start &
+
+#if [ "$1" = "S" -a "$foreground" != "1" ]; then
+#	echo "Starting scripts.."
+#        run_scripts start "$2" &
+#else
+#        run_scripts stop "$2"
+#fi

@@ -1,0 +1,100 @@
+#!/bin/sh
+#
+# Script to setup a system's static routes based on the
+# /etc/network/routes definitions.
+#
+# It tries to simplify network route management and make it easier
+# to handle those as requested in bug #368228 ('Wish: Better Handling 
+# of up/down route commands'). With this script routes do not have to be 
+# introduced in /etc/network/interfaces (in 'up' and 'down' commands).
+#
+# This file includes a list of routes for different networks and follows
+# the format:
+# Network Netmask Gateway Interface
+# 
+# Example:
+# 172.1.1.0 255.255.255.0 192.168.0.1 eth0
+#
+# Install this script in /etc/network/if-up.d/ (to setup the routes) and in 
+# /etc/network/if-pre-down.d/ (if you want to remove the routes before
+# deconfiguring the interface)
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#  
+# You can also find a copy of the GNU General Public License at
+# http://www.gnu.org/licenses/licenses.html#TOCLGPL
+#
+#
+# TODO:
+#  - No action is taken if the routes already exist (when adding them) or when
+#    they dont (if you are removing), if they do you will get an error in
+#    stderr but the script will continue 
+#    Note: If you add the up/down in /etc/network/interfaces failure when
+#          setting up a route breaks the interface configuration
+
+ROUTEFILE="/etc/network/routes"
+
+# Abort (without error) if the configuration file does not exist
+[ ! -r "$ROUTEFILE" ] && exit 0
+# Default value
+VERBOSITY=${VERBOSITY:-0}
+
+del_static_routes() {
+	# NOTE: We actually don't have to remove routes if downing an interface
+	# since they will be removed nevertheless. In any case, this 
+	# piece of code only runs if you install this file in 
+	# /etc/network/if-pre-down.d/ (which you don't need to)
+	cat $ROUTEFILE | egrep "^[^#].*[[:space:]]${IFACE}[[:space:]]*$" | 
+	while read network netmask gateway interface ; do
+            if [ -n "$interface" ] && [ -n "$network" ] && [ -n "$netmask" ] && [ -n "$gateway" ] ; then
+                if [ "$gateway" != "reject" ] ; then
+                    [ "$VERBOSITY" -eq 1 ] && echo "DEBUG: Deleting route for $network / $netmask through gateway $gateway at $interface"
+                    route del -net $network netmask $netmask gw $gateway dev $interface
+                else
+                    [ "$VERBOSITY" -eq 1 ] && echo "DEBUG: Deleting reject route for $network / $netmask when bringing up $interface"
+                    route del -net $network netmask $netmask reject
+                fi
+
+            else
+                echo "ERROR: Incorrect line for $IFACE in $ROUTEFILE: '$network $netmask $gateway $interface'"
+            fi
+	done
+}
+
+add_static_routes() {
+	cat $ROUTEFILE | egrep "^[^#].*[[:space:]]${IFACE}[[:space:]]*$" | 
+	while read network netmask gateway interface ; do
+            if [ -n "$interface" ] && [ -n "$network" ] && [ -n "$netmask" ] && [ -n "$gateway" ] ; then
+                if [ "$gateway" != "reject" ] ; then
+		    [ "$VERBOSITY" -eq 1 ] && echo "DEBUG: Adding route for $network / $netmask through gateway $gateway at $interface"
+        	    route add -net $network netmask $netmask gw $gateway dev $interface
+                else
+                    [ "$VERBOSITY" -eq 1 ] && echo "DEBUG: Adding reject route for $network / $netmask when bringing up $interface"
+                    route add -net $network netmask $netmask reject
+                fi
+
+            else
+                echo "ERROR: Incorrect line for $IFACE in $ROUTEFILE: '$network $netmask $gateway $interface'"
+            fi
+	done
+}
+
+case "$MODE" in 
+	start) add_static_routes ;;
+	stop)  del_static_routes ;;
+	*)     ;;
+esac
+
+exit 0

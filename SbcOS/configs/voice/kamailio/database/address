@@ -1,0 +1,5 @@
+id(int,auto) grp(int) ip_addr(string) mask(int) port(int) tag(string,null) description(string,null)
+1:1:10.1.1.4:32:0:NULL:Trusted, Core IP
+101:101:192.168.1.4:32:0:NULL:Untrusted, Access IP
+201:201:registrar-[192.168.1.4].sbc:32:0:NULL:External-Register-Untrusted
+301:301:registrar-[10.1.1.4].sbc:32:0:NULL:Internal-Register-Trusted
