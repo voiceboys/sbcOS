@@ -30,7 +30,7 @@ init_aufs
 init_zram
 
 # modprobe all devices excluding network drivers
-#modprobe_everything -v /drivers/net/
+modprobe_everything -v /drivers/net/
 
 init_network_dev
 
