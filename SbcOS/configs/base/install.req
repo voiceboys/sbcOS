@@ -159,3 +159,7 @@ libiptc0
 libfastjson4
 liblz4-1
 bash
+libavcodec57
+libavutil55
+libavformat57
+
