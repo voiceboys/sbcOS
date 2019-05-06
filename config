@@ -41,3 +41,6 @@ LMK="lib/modules/$KERNEL"
 
 #Root password 
 ROOTPASSWORD="plusnet"
+
+#Ubuntu 18
+UBUNTU=true

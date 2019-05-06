@@ -30,7 +30,13 @@ init_aufs
 init_zram
 
 # modprobe all devices excluding network drivers
-modprobe_everything -v /drivers/net/
+
+# network support drivers
+if [ "$UBUNTU" = "false" ]; then
+   # add all known ethernet drivers
+   modprobe_everything -v /drivers/net/
+   rmmod gre
+fi
 
 init_network_dev
 

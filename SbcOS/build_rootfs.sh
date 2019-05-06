@@ -187,6 +187,9 @@ function prebuild() {
 }
 
 function buildrootfs() {
+
+	rm -rf $RFSDIR/rootfs
+	mkdir_if_missing $RFSDIR/rootfs
 	rm $LOGDIR/install.lib.* $LOGDIR/install.deb.*
 	touch $LOGDIR/install.lib.base
 	depcheck base
@@ -272,6 +275,8 @@ function buildrootfs() {
 	mkdir -p $RFSDIR/rootfs/var/spool/backup
 	check_exit_code
 	mkdir -p $RFSDIR/rootfs/var/lib/voip
+	check_exit_code
+	mkdir -p $RFSDIR/rootfs/var/lib/redis
 	check_exit_code
 	mknod $RFSDIR/rootfs/dev/console c 5 1
 	mknod $RFSDIR/rootfs/dev/null c 1 3
@@ -460,7 +465,7 @@ function buildrootfs() {
 	cp -Rp $CFGDIR/voice/kamailio/* $RFSDIR/rootfs/etc/kamailio/
 	check_exit_code
 	
-	mv $RFSDIR/rootfs/etc/kamailio/kamailio.default $RFSDIR/rootfs/etc/default/
+	mv $RFSDIR/rootfs/etc/kamailio/kamailio.default $RFSDIR/rootfs/etc/default/kamailio
 	
 	echo " | rtpengine configs"
 	install -m 644 $CFGDIR/voice/rtpengine/rtpengine.conf $RFSDIR/rootfs/etc/rtpengine/
@@ -486,6 +491,11 @@ function buildrootfs() {
 	mountpoint -q "$RFSDIR/squashfs" && umount "$RFSDIR/squashfs" -l
 	mount -o size=1024M -t tmpfs none "$RFSDIR/squashfs"
 	check_exit_code
+
+	# if this is ubuntu, we should copy local xtables binary
+	if [ "$UBUNTU" = "true" ]; then
+		cp -Rp /sbin/xtables-multi $RFSDIR/rootfs/sbin/xtables-multi
+	fi
 
 	echo " | copy base rootfs to squashfs"
 	cd $RFSDIR/rootfs

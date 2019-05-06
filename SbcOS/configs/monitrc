@@ -7,7 +7,7 @@ set logfile syslog facility log_daemon
 set idfile /var/lib/monit/id
 set statefile /var/lib/monit/state
 
-set mailserver ##EMAILGATEWAY##
+set mailserver 10.0.0.1
 
 #
 # set mailserver mail.bar.baz,               # primary mailserver
@@ -35,9 +35,9 @@ set mailserver ##EMAILGATEWAY##
 ## }
 ## --8<--
 ##
-#set mail-format { from: admin@yourhost.de }
+set mail-format { from: admin@yourhost.de }
 #Email
-#set alert admin@yourhost.de       # receive all alerts
+set alert admin@yourhost.de       # receive all alerts
 
 ## Do not alert when Monit starts, stops or performs a user initiated action.
 ## This filter is recommended to avoid getting alerts for trivial cases.
@@ -60,7 +60,7 @@ set httpd port 2812 and
 ## usage. Each test specifies a resource, conditions and the action to be
 ## performed should a test fail.
 #
-check system ##HOST##
+check system plusbc01
     if loadavg (1min) > 4 then alert
     if loadavg (5min) > 2 then alert
     if memory usage > 75% then alert
