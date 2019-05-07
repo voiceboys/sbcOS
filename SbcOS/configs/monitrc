@@ -1,7 +1,7 @@
 ###############################################################################
 ## Monit control file
 ###############################################################################
-set daemon 10 with start delay 20  
+set daemon 5 with start delay 5  
 set pidfile /var/run/monit.pid
 set logfile syslog facility log_daemon                       
 set idfile /var/lib/monit/id
