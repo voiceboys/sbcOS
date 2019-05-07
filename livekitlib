@@ -218,6 +218,8 @@ init_devs()
    modprobe ip_tables
    modprobe iptable_filter
    modprobe xt_string
+   modprobe usb_storage
+   modprobe usbkbd
    
    refresh_devs
 }
@@ -398,7 +400,7 @@ init_network_dev()
    local MODULE ETH
 
    for MODULE in 3c59x acenic r8169 e1000 e1000e e100 epic100 hp100 ne2k-pci \
-   pcnet32 8139too 8139cp tulip via-rhine atl1e yellowfin tg3 \
+   pcnet32 8139too 8139cp tulip via-rhine atl1e yellowfin tg3 iwlwifi \
    dl2k ns83820 atl1 b44 bnx2 skge sky2 tulip forcedeth sb1000 sis900; do
       modprobe $MODULE 2>/dev/null
       ETH="$(network_device)"
@@ -902,9 +904,9 @@ change_root()
    mount -n -o remount,rw aufs .
    pivot_root . run/initramfs
 
-   if [ "$(ls -A run/initramfs/memory/data/${LIVEKITNAME}/configs/)" ]; then
-	   cp -Rp run/initramfs/memory/data/${LIVEKITNAME}/configs/* /   
-   fi
+   #if [ "$(ls -A run/initramfs/memory/data/${LIVEKITNAME}/configs/)" ]; then
+   #	   cp -Rp run/initramfs/memory/data/${LIVEKITNAME}/configs/* /   
+   #fi
 
    hostname "$(cat /etc/hostname)"
 

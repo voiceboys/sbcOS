@@ -106,6 +106,14 @@ copy_including_deps /$LMK/kernel/drivers/hid/hid.*
 copy_including_deps /$LMK/kernel/drivers/hid/uhid.*
 copy_including_deps /$LMK/kernel/drivers/hid/hid-generic.*
 
+#Just for some wireless device. DEMO ONLY!
+copy_including_deps /$LMK/kernel/net/mac80211/mac80211.ko
+copy_including_deps /$LMK/kernel/net/wireless/cfg80211.ko
+copy_including_deps /$LMK/kernel/drivers/net/wireless/intel/iwlwifi/mvm/iwlmvm.ko
+copy_including_deps /$LMK/kernel/drivers/net/wireless/intel/iwlwifi/iwlwifi.ko
+#############################################################
+
+
 # disk and cdrom drivers
 copy_including_deps /$LMK/kernel/drivers/cdrom
 copy_including_deps /$LMK/kernel/drivers/scsi/sr_mod.*

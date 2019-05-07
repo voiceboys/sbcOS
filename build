@@ -44,7 +44,7 @@ rm -Rf "$LIVEKITDATA"
 BOOT="$LIVEKITDATA"/"$LIVEKITNAME"/boot
 mkdir -p "$BOOT"
 mkdir -p "$BOOT"/../changes
-mkdir -p "$BOOT"/../configs
+#mkdir -p "$BOOT"/../configs
 mkdir -p "$BOOT"/../modules
 
 if [ "$INITRAMFS" != "" ]; then
