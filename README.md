@@ -47,7 +47,7 @@ and two scripts: that make an ISO image for you
 
 If you have any question, dont hesistate contact us!
 
-The Project will soon move to another repository! This is just a start!
+The Project will soon move to an another repository! This is just a start!
 
 
 
