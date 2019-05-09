@@ -12,9 +12,10 @@ password: plusnet
 enjoy!
 
 
-The image is already in ISO, so just run a shell script inside and generate
-an ISO image or copy the data to your USB stick and go to sbc/boot and run
-bootinst.sh. The script will make your USB stick bootable. Dont forget to install genisoimage!
+In the repository you will find an ISO directory that contacins the files to generate an ISO image, 
+so just go there and run a shell script inside and to generate an ISO image or copy the data 
+to your USB stick and go to sbc/boot and run bootinst.sh. The script will make your USB stick bootable. 
+Dont forget to install genisoimage!
 
 
 How to build the system manualy:
@@ -24,7 +25,7 @@ The system requires Ubuntu 18 or Debian 9!
 Required packages (Debian 9)
 
 ```
-apt-get install whois dirmngr multistrap reprepro binutils squashfs-tools
+apt-get install whois dirmngr multistrap reprepro binutils squashfs-tools genisoimage
 ```
 
 clone the repository, go to SbcOS and run:
@@ -33,7 +34,7 @@ clone the repository, go to SbcOS and run:
 ./build_root.sh
 ```
 
-dont forget to install: multistrap, reprepo and whois (mkpasswd)
+dont forget to install: multistrap, reprepo, whois (mkpasswd), genisoimage
 
 The script will create a rootfs squashfs image.
 
