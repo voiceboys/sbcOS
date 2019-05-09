@@ -27,7 +27,7 @@ clone the repository, go to SbcOS and run:
 ./build_root.sh
 ```
 
-dont forget to install: multistrap, reprepo
+dont forget to install: multistrap, reprepo and whois (mkpasswd)
 
 The script will create a rootfs squashfs image.
 
