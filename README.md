@@ -12,7 +12,7 @@ password: plusnet
 enjoy!
 
 
-In the repository you will find an ISO directory that contacins the files to generate an ISO image, 
+In the repository you will find an ISO directory that contains the files to generate an ISO image, 
 so just go there and run a shell script inside and to generate an ISO image or copy the data 
 to your USB stick and go to sbc/boot and run bootinst.sh. The script will make your USB stick bootable. 
 Dont forget to install genisoimage!
