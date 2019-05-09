@@ -21,6 +21,12 @@ How to build the system manualy:
 
 The system requires Ubuntu 18 or Debian 9!
 
+Required packages (Debian 9)
+
+```
+apt-get install whois dirmngr multistrap reprepro binutils squashfs-tools
+```
+
 clone the repository, go to SbcOS and run:
 
 ```
