@@ -19,7 +19,7 @@ bootinst.sh. The script will make your USB stick bootable.
 
 How to build the system manualy:
 
-The system require Ubuntu 18 or Debian9!
+The system requires Ubuntu 18 or Debian 9!
 
 clone the repository, go to SbcOS and run:
 
