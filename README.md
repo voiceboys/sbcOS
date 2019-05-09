@@ -14,7 +14,7 @@ enjoy!
 
 The image is already in ISO, so just run a shell script inside and generate
 an ISO image or copy the data to your USB stick and go to sbc/boot and run
-bootinst.sh. The script will make your USB stick bootable.
+bootinst.sh. The script will make your USB stick bootable. Dont forget to install genisoimage!
 
 
 How to build the system manualy:
