@@ -24,7 +24,7 @@ The system requires Ubuntu 18 or Debian 9!
 Required packages (Debian 9)
 
 ```
-apt-get install whois dirmngr multistrap reprepro binutils squashfs-tools
+apt-get install whois dirmngr multistrap reprepro binutils squashfs-tools genisoimage
 ```
 
 clone the repository, go to SbcOS and run:
