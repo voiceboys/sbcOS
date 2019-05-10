@@ -80,6 +80,17 @@ sbc-initrfs-XXXX
 and two scripts: that make an ISO image for you 
 
 
+Important! Please be sure that your /vmlinuz is pointing to the same version of kernel
+that runs now!
+
+```
+root@linux:sbcOS# uname -r
+4.9.0-8-amd64
+root@inux:sbcOS# ls -l /vmlinuz
+lrwxrwxrwx 1 root root 26 May  5 23:20 /vmlinuz -> boot/vmlinuz-4.9.0-8-amd64
+
+```
+
 If you have any question, dont hesistate contact us!
 
 The Project will soon move to an another repository! This is just a start!
