@@ -139,10 +139,13 @@ else
 	cd "source/rtpengine-${RTPENGINE}/kernel-module"
 	make
 	cd ../../../
-	mkdir "modules/${KERNEL}"
+	if [ ! -d "modules/${KERNEL}" ]; then
+		mkdir "modules/${KERNEL}"
+	fi
+		
 	if [ -f "source/rtpengine-${RTPENGINE}/kernel-module/xt_RTPENGINE.ko" ]; then
 	  	echo "Module xt_RTPENGINE.ko has been compiled! Copying..."
-	  	cp source/rtpengine-${RTPENGINE}/kernel-module/xt_RTPENGINE.ko modules/${KERNEL}/	  	
+	  	cp "source/rtpengine-${RTPENGINE}/kernel-module/xt_RTPENGINE.ko" modules/${KERNEL}/	  	
         	cp modules/${KERNEL}/xt_RTPENGINE.ko $INITRAMFS/$LMK/kernel/net/netfilter
 	else 
 		echo "Module xt_RTPENGINE.ko has been not compiled. RTPEngine will work in userspace mode!. LOW PERFOMANCE!"
