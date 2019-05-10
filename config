@@ -44,3 +44,14 @@ ROOTPASSWORD="plusnet"
 
 #Ubuntu 18
 UBUNTU=true
+
+#RTPENGINE VERSION
+RTPENGINE="mr7.1.1.1"
+
+#KAMAILIO VERSION
+KAMAILIO="5.2.1"
+
+#SIP AND RTP ENGINE. In the future can be openSIP and rtpproxy if needed
+SIP_ENGINE="kamailio"
+RTP_ENGINE="rtpengine"
+

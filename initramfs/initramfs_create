@@ -131,7 +131,24 @@ copy_including_deps /$LMK/kernel/net/ipv6/netfilter/ip*.*
 copy_including_deps /$LMK/kernel/net/ipv6/netfilter/nf*.*
 
 #
-cp modules/${KERNEL}/xt_RTPENGINE.ko $INITRAMFS/$LMK/kernel/net/netfilter
+if [ -f "modules/${KERNEL}/xt_RTPENGINE.ko" ]; then
+	echo "Module xt_RTPENGINE.ko exists copying to netfilter"
+	cp modules/${KERNEL}/xt_RTPENGINE.ko $INITRAMFS/$LMK/kernel/net/netfilter
+else 
+	echo "Module xt_RTPENGINE.ko doesnt exists try to compile first"
+	cd "source/rtpengine-${RTPENGINE}/kernel-module"
+	make
+	cd ../../../
+	mkdir "modules/${KERNEL}"
+	if [ -f "source/rtpengine-${RTPENGINE}/kernel-module/xt_RTPENGINE.ko" ]; then
+	  	echo "Module xt_RTPENGINE.ko has been compiled! Copying..."
+	  	cp source/rtpengine-${RTPENGINE}/kernel-module/xt_RTPENGINE.ko modules/${KERNEL}/	  	
+        	cp modules/${KERNEL}/xt_RTPENGINE.ko $INITRAMFS/$LMK/kernel/net/netfilter
+	else 
+		echo "Module xt_RTPENGINE.ko has been not compiled. RTPEngine will work in userspace mode!. LOW PERFOMANCE!"
+	fi	
+fi
+
 
 # network support drivers
 if [ "$NETWORK" = "true" ]; then
