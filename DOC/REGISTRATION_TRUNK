@@ -1,0 +1,27 @@
+For registration mode:
+In database file address the external (untrusted) and internal (trusted) IPs of the SBC are configured:
+
+Trusted:
+1:1:10.1.1.4:32:0:NULL:Trusted, Core IP
+301:301:registrar-[10.1.1.4].sbc:32:0:NULL:Internal-Register-Trusted
+
+Untrusted:
+101:101:192.168.1.4:32:0:NULL:Untrusted, Access IP
+201:201:registrar-[192.168.1.4].sbc:32:0:NULL:External-Register-Untrusted
+In dispatcher file the external (untrusted) IP of the SBC is configured aswell, using the same ID (201) as in address file. For the internal (trusted) connection the ID (301) is used to specify the destination SER, Asterisk, etc. in your core-network:
+
+Untrusted:
+201 sip:192.168.1.4:5060 0 0 access=10.1.1.4:5060;socket=udp:10.1.1.4:5060;weight=100
+
+Trusted:
+
+Reg03
+301 sip:172.168.5.152:5060 0 5 access=192.168.1.4:5060;socket=udp:10.1.1.4:5060;weight=50
+
+Reg02
+301 sip:172.168.91.46:5060 0 10 access=192.168.1.4:5060;socket=udp:10.1.1.4:5060;weight=100
+
+(Loadbalancing or weight can be played with in kamailio.cfg)
+In rtpengine.conf you can specify the internal and external IP the RTPEngine is using for RTP relay. This will also be linked with the IDs used in address table (trusted 1 & untrusted 101):
+
+interface=1/10.1.1.4;101/192.168.1.4
