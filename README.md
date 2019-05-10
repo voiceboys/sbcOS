@@ -1,7 +1,7 @@
 # sbcOS
 
 SBC-OS is an opensource answer on all marketing noice that sometimes makes
-our live complicate. 
+our lives complicate. 
 
 SBC-OS is a drop-replace solution for any existing commercial SBC.
 
