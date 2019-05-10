@@ -57,6 +57,14 @@ cat bootfiles/syslinux.cfg | sed -r "s:/boot/:/$LIVEKITNAME/boot/:" > $BOOT/sysl
 cat bootfiles/bootinst.bat | sed -r "s:/boot/:/$LIVEKITNAME/boot/:" | sed -r "s:\\\\boot\\\\:\\\\$LIVEKITNAME\\\\boot\\\\:" > $BOOT/bootinst.bat
 cp $VMLINUZ $BOOT/
 
+#
+if [ ! -f "SbcOS/build/img/sbc-public.${BEXT}" ]; then
+        echo "rootfs sbc-public.${BEXT} doesnt exist. Go there and compiling it!"
+        cd SbcOS
+        ./build_rootfs.sh
+        cd ..
+fi
+
 cp SbcOS/build/img/*.$BEXT $LIVEKITDATA/$LIVEKITNAME/
 
 cd "$LIVEKITDATA"
