@@ -65,7 +65,7 @@ libldap-2.4-2
 liblocale-gettext-perl
 liblogging-stdlog0
 liblognorm5
-liblwres161
+liblwres141
 liblzma5
 libmnl0
 libmount1
@@ -104,9 +104,6 @@ libssl1.0.2
 libstdc++6
 libsystemd0
 libtasn1-6
-libtext-charwidth-perl
-libtext-iconv-perl
-libtext-wrapi18n-perl
 libtinfo5
 libudev1
 libusb-0.1-4
@@ -138,7 +135,7 @@ ifupdown-extra
 ifenslave
 udev
 debianutils
-libuv
+libuv1
 tcpdump
 irqbalance
 libjson-glib-1.0-0

@@ -419,9 +419,10 @@ function buildrootfs() {
 	echo " | install root ssh files to future base rootfs"
 	install -m 700 -d $RFSDIR/rootfs/root/.ssh
 	check_exit_code
-	#disabled. Make a own one
-	#install -m 600 $CFGDIR/root/authorized_keys $RFSDIR/rootfs/root/.ssh/authorized_keys
-	#check_exit_code
+		
+	#Please make an own one
+	install -m 600 $CFGDIR/root/authorized_keys $RFSDIR/rootfs/root/.ssh/authorized_keys
+	check_exit_code
 	install -m 600 $CFGDIR/root/id_rsa $RFSDIR/rootfs/root/.ssh/id_rsa
 	check_exit_code
 	install -m 644 $CFGDIR/root/id_rsa.pub $RFSDIR/rootfs/root/.ssh/id_rsa.pub

@@ -35,7 +35,8 @@ fi
 if [ "$SKIPINITRFS" = "" ]; then
    echo "Building intramfs image..."
    cd initramfs
-   INITRAMFS=$(./initramfs_create)
+   ./initramfs_create
+   INITRAMFS=$(cat /tmp/.initramfs)
    cd ..
 fi
 

@@ -95,5 +95,5 @@ If you have any question, dont hesistate contact us!
 
 The Project will soon move to an another repository! This is just a start!
 
-
+Thanks Tomas M. <http://www.linux-live.org> for initramfs scripts!
 

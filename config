@@ -3,15 +3,6 @@
 # You shouldn't need to change anything expect LIVEKITNAME
 
 # Live Kit Name. Defaults to 'linux';
-# This will be the name of the directory created on your CD/USB, which
-# will contain everything including boot files and such.
-# For example, Slax changes it to 'slax'
-# Must not contain any spaces.
-# If you change it, you must run ./tools/isolinux.bin.update script
-# in order to update isolinux.bin for CD booting.
-# If you do not need booting from CD (eg you're booting only from USB)
-# then you can ignore recompiling isolinux.bin, just rename LIVEKITNAME
-# and you're done.
 LIVEKITNAME="sbc"
 
 # Kernel file, will be copied to your Live Kit
@@ -43,7 +34,7 @@ LMK="lib/modules/$KERNEL"
 ROOTPASSWORD="plusnet"
 
 #Ubuntu 18
-UBUNTU=true
+UBUNTU=false
 
 #RTPENGINE VERSION
 RTPENGINE="mr7.1.1.1"
