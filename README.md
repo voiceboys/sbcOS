@@ -53,7 +53,7 @@ The system requires Ubuntu 18 or Debian 9!
 Required packages (Debian 9 / Ubuntu 18)
 
 ```
-apt-get install whois dirmngr multistrap reprepro binutils squashfs-tools genisoimage make linux-headers-$(uname -r)
+apt-get install whois dirmngr multistrap reprepro binutils squashfs-tools genisoimage make linux-headers-$(uname -r) zip
 ```
 
 clone the repository, go to SbcOS and run:
