@@ -15,7 +15,7 @@ next features:
 4. Topology hiding
 5. Header manipulation
 6. SIP TLS -> SIP
-7. RTP Relay (kernel space) including QOS. Amazing perfomance. Around 10K CC on
+7. RTP Relay (kernel space) including QOS. Amazing performance. Around 10K CC on
 1U server like DELL R360.
 8. RTP transcoding, RTP Recording  (user space)
 9. SRTP->RTP and vice-versa
