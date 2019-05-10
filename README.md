@@ -1,5 +1,33 @@
 # sbcOS
 
+SBC-OS is an opensource answer on all marketing noice that sometimes makes
+our live complicate. 
+
+SBC-OS is a drop-replace solution for any existing commercial SBC.
+
+SBC-OS is a STACK that includes open-sources components that will give you
+next features:
+
+ 
+1. NAT fix including NAT ping
+2. SIP analyze and normalizing (SIP/VoIP Firewall) 
+3. PIKE - limits (selfilter)
+4. Topology hiding
+5. Header manipulation
+6. SIP TLS -> SIP
+7. RTP Relay (kernel space) including QOS. Amazing perfomance. Around 10K CC on
+1U server like DELL R360.
+8. RTP transcoding, RTP Recording  (user space)
+9. SRTP->RTP and vice-versa
+10. WebRTC and IMS support including diameter.
+11. IP Trunking / Registration Trunking
+12. Monitoring and statistics including RTP/RTCP MOS/QOS (Homer/Hepic)
+13. Internal statistics / CPU/Memory/Network usage
+14. Full IPv4 IPv6 support. 
+
+
+NB! For the (Lawful Interception) LI, please contact info@qxip.net
+
 
 for everybody who has got a USB stick on KW 2019: the SBC-OS has been
 installed already. You can boot your server or laptop using this stick
