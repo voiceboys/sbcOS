@@ -59,7 +59,7 @@ apt-get install whois dirmngr multistrap reprepro binutils squashfs-tools geniso
 clone the repository, go to SbcOS and run:
 
 ```
-./build_root.sh
+./build_rootfs.sh
 ```
 
 dont forget to install: multistrap, reprepo, whois (mkpasswd), genisoimage
