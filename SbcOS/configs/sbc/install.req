@@ -18,8 +18,6 @@ ngcp-rtpengine
 ngcp-rtpengine-daemon
 ngcp-rtpengine-iptables
 ngcp-rtpengine-utils
-libuv
-libmysqlclient18
 tcpdump
 htop
 lsof

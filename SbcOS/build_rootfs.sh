@@ -123,6 +123,11 @@ function mkdir_if_missing() {
     fi
 }
 
+function init_pool() {
+
+	rm -rf $RFSDIR/rootfs
+	mkdir_if_missing $RFSDIR/rootfs
+}
 
 function init_rootfs() {
 
@@ -131,16 +136,13 @@ function init_rootfs() {
 	mkdir_if_missing $TMPDIR
 	mkdir_if_missing $LOGDIR
 	mkdir_if_missing $DEBDIR/import
-	#mkdir_if_missing $RFSDIR/initramfs
 	mkdir_if_missing $RFSDIR/squashfs
 	mkdir_if_missing $RFSDIR/bootstrap
-	mkdir_if_missing $RFSDIR/rootfs
 	mkdir_if_missing $RFSDIR/src
 }
 
 
-
-function prebuild() {
+function clean_multistrap() {
 	echo "use parameter [-debian] for update builder" 
 	echo "-= build sbc-repository repository" | tee $LOGDIR/${SCRIPTNAME}_$BUILDDATE.echo
 
@@ -151,7 +153,11 @@ function prebuild() {
 	if [ ! -d "${BOOTSTRAPDIR}/etc/apt" ]; then
 	        mkdir -p "${BOOTSTRAPDIR}/etc/apt"
 	        check_exit_code	        
-	fi
+	fi	
+}
+
+
+function prebuild() {
 	
 	cp /etc/apt/trusted.gpg "${BOOTSTRAPDIR}/etc/apt"
 	check_exit_code
@@ -536,7 +542,13 @@ function buildrootfs() {
 }
 
 
-init_rootfs
+# if cache we will keep it
+if [ "$REPOSITORY_CACHE" = "false" ]; then
+	init_rootfs
+	clean_multistrap
+fi
+
+init_pool
 
 prebuild
 

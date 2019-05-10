@@ -46,3 +46,7 @@ KAMAILIO="5.2.1"
 SIP_ENGINE="kamailio"
 RTP_ENGINE="rtpengine"
 
+#Clean up repository always.
+REPOSITORY_CACHE=false
+#
+
