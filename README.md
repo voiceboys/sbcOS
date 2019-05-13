@@ -1,13 +1,8 @@
-# sbcOS
+# <img src="https://user-images.githubusercontent.com/1423657/57624925-31f08780-7593-11e9-9e1e-2f876efa23ac.png" width=300 alt="sbcOS">
 
-SBC-OS is an opensource answer on all marketing noice that sometimes makes
-our lives complicate. 
+**SBC-OS** is an open-source drop-in replacement for many existing commercial Session Border Controllers designed for performance and resource optimization
 
-SBC-OS is a drop-replace solution for any existing commercial SBC.
-
-SBC-OS is a STACK that includes open-sources components that will give you
-next features:
-
+### Features
  
 1. NAT fix including NAT ping
 2. SIP analyze and normalizing (SIP/VoIP Firewall) 
@@ -25,10 +20,11 @@ next features:
 13. Internal statistics / CPU/Memory/Network usage
 14. Full IPv4 IPv6 support. 
 
-
+### Optional Features
 NB! For the (Lawful Interception) LI, please contact info@qxip.net
 
-
+### Deployment
+#### USB Stick
 for everybody who has got a USB stick on KW 2019: the SBC-OS has been
 installed already. You can boot your server or laptop using this stick
 ```
@@ -39,7 +35,7 @@ password: plusnet
 
 enjoy!
 
-
+#### DIY
 In the repository you will find an ISO directory that contains the files to generate an ISO image, 
 so just go there and run a shell script inside and to generate an ISO image or copy the data 
 to your USB stick and go to sbc/boot and run bootinst.sh. The script will make your USB stick bootable. 
