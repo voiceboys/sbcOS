@@ -1,0 +1,27 @@
+For trunking mode:
+In database file address the external (untrusted) and internal (trusted) IPs of the SBC are configured. Beside the external and internal IP the Mapping (ID 2001 and 1001) include the destination IPs of the Trunk. Trusted ID 2001 includes the destination SER, Asterisk, etc. in your core-network. Untrusted ID 1001 includes the external IP of your partner SBC, partner SER, etc.
+
+Trusted:
+1:1:10.1.1.4:32:0:NULL:Trusted, Core IP
+2001:2001:trunk-[10.1.1.4]-[172.168.5.152].sbc:32:0:NULL:Internal-Trunk-Trusted
+
+Untrusted:
+101:101:192.168.1.4:32:0:NULL:Untrusted, Access IP
+1001:1001:trunk-[192.168.1.4]-[193.22.119.66].sbc:32:0:NULL:External-Trunking-Untrusted
+
+
+
+In dispatcher file the internal (trusted) connection ID (2001) is used to specify the destination SER, Asterisk, etc. in your core-network. The external (untrusted) connection ID (1001) is used to specify the destination IP of your partner SBC, partner SER, etc:
+
+Untrusted:
+1001 sip:193.22.119.66:5060 0 0 access=10.1.1.4:5060;socket=udp:10.1.1.4:5060;weight=100
+
+Trusted:
+2001 sip:172.168.5.152:5060 0 0 access=192.168.1.4:5060;socket=udp:192.168.1.4:5060;weight=100
+
+
+
+
+In rtpengine.conf you can specify the internal and external IP the RTPEngine is using for RTP relay. This will also be linked with the IDs used in address table (trusted 1 & untrusted 101):
+
+interface=1/10.1.1.4;101/192.168.1.4
