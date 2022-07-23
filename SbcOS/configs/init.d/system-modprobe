@@ -20,7 +20,6 @@ case "$1" in
 	modprobe xt_tcpudp
 	modprobe xt_conntrack
 	modprobe nf_defrag_ipv4
-	modprobe nf_conntrack_ipv4
 	modprobe ip_tables
 	modprobe iptable_filter
 	modprobe xt_string

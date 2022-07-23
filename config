@@ -3,6 +3,15 @@
 # You shouldn't need to change anything expect LIVEKITNAME
 
 # Live Kit Name. Defaults to 'linux';
+# This will be the name of the directory created on your CD/USB, which
+# will contain everything including boot files and such.
+# For example, Slax changes it to 'slax'
+# Must not contain any spaces.
+# If you change it, you must run ./tools/isolinux.bin.update script
+# in order to update isolinux.bin for CD booting.
+# If you do not need booting from CD (eg you're booting only from USB)
+# then you can ignore recompiling isolinux.bin, just rename LIVEKITNAME
+# and you're done.
 LIVEKITNAME="sbc"
 
 # Kernel file, will be copied to your Live Kit
@@ -13,6 +22,12 @@ VMLINUZ=/vmlinuz
 # Kernel version. Change it to "3.2.28" for example, if you are building
 # Live Kit with a different kernel than the one you are actually running
 KERNEL=$(uname -r)
+
+# List of directories for root filesystem
+# No subdirectories are allowed, no slashes,
+# so You can't use /var/tmp here for example
+# Exclude directories like proc sys tmp
+MKMOD="bin etc home lib lib64 opt root sbin srv usr var"
 
 # If you require network support in initrd, for example to boot over
 # PXE or to load data using 'from' boot parameter from a http server,
@@ -30,17 +45,17 @@ BEXT=sb
 # Directory with kernel .ko modules, can be different in some distros
 LMK="lib/modules/$KERNEL"
 
-#Root password 
+#Root password
 ROOTPASSWORD="plusnet"
 
 #Ubuntu 18
 UBUNTU=false
 
 #RTPENGINE VERSION
-RTPENGINE="mr7.1.1.1"
+RTPENGINE="mr10.5.1.3"
 
 #KAMAILIO VERSION
-KAMAILIO="5.2.1"
+KAMAILIO="5.6.1"
 
 #SIP AND RTP ENGINE. In the future can be openSIP and rtpproxy if needed
 SIP_ENGINE="kamailio"
@@ -48,5 +63,3 @@ RTP_ENGINE="rtpengine"
 
 #Clean up repository always.
 REPOSITORY_CACHE=false
-#
-

@@ -2,7 +2,7 @@
 
 # Functions library :: for Linux Live Kit scripts
 # Alexandr Dubovikov <alexandr.dubovikov@gmail.com>
-# Base on Linux Live Kit of 
+# Base on Linux Live Kit of
 # Author: Tomas M. <http://www.linux-live.org>
 #
 
@@ -24,8 +24,8 @@ debug_log()
 {
    if [ "$DEBUG_IS_ENABLED" ]; then
       echo "- debug: $*" >&2
-      log "- debug: $*"
    fi
+   log "- debug: $*"
 }
 
 # header
@@ -171,8 +171,8 @@ init_proc_sysfs()
    mount -n -t sysfs sysfs /sys
    mount -n -o remount,rw rootfs /
    ln -sf /proc/mounts /etc/mtab
-   
 }
+
 
 # modprobe all modules found in initial ramdisk
 # $1 = -e for match, -v for negative match
@@ -207,20 +207,17 @@ init_devs()
    modprobe zram 2>/dev/null
    modprobe loop 2>/dev/null
    modprobe squashfs 2>/dev/null
-   modprobe -q squashfs 2>/dev/null
    modprobe fuse 2>/dev/null
    modprobe nf_conntrack
    modprobe x_tables
    modprobe xt_tcpudp
    modprobe xt_conntrack
    modprobe nf_defrag_ipv4
-   modprobe nf_conntrack_ipv4
    modprobe ip_tables
    modprobe iptable_filter
    modprobe xt_string
    modprobe usb_storage
-   modprobe usbkbd
-   
+   modprobe usbhid
    refresh_devs
 }
 
@@ -243,31 +240,48 @@ init_zram()
 }
 
 
-# load the AUFS kernel module if needed
+aufs_is_supported()
+{
+   cat /proc/filesystems | grep aufs
+}
+
+
+# load the AUFS kernel driver. If not found,
+# load overlayfs instead.
 #
 init_aufs()
 {
    debug_log "init_aufs" "$*"
-   # TODO maybe check here if aufs support is working at all
-   # and produce useful error message if user has no aufs
    modprobe aufs 2>/dev/null
+   if ! aufs_is_supported >/dev/null; then
+      modprobe overlay 2>/dev/null
+   fi
    refresh_devs
 }
 
 
-# Setup empty union
+# Setup empty aufs union, or create overlayfs union
 # $1 = changes directory (ramfs or persistent changes)
 # $2 = union directory where to mount the union
+# $3 = bundles directory
 #
 init_union()
 {
    debug_log "init_union" "$*"
-
-   echo_green_star
-   echo "Setting up union using AUFS"
    mkdir -p "$1"
    mkdir -p "$2"
-   mount -t aufs -o xino="/.xino",trunc_xino,br="$1" aufs "$2"
+
+   if aufs_is_supported >/dev/null; then
+      echo_green_star
+      echo "Setting up empty union using aufs"
+      mount -t aufs -o xino="/.xino",trunc_xino,br="$1" aufs "$2"
+   else
+      echo_green_star
+      echo "Setting up union using overlayfs"
+      mkdir -p "$1/changes"
+      mkdir -p "$1/workdir"
+      mount -t overlay overlay -o lowerdir=$(find "$3" -mindepth 1 -maxdepth 1 | sortmod | tac | tr '\n' ':' | sed -r 's/:$//'),upperdir=$1/changes,workdir=$1/workdir $2
+   fi
 }
 
 
@@ -434,13 +448,12 @@ init_network_static_ip()
       # set IP address as given by boot paramter
       echo "$IP" | while IFS=":" read CLIENT SERVER GW MASK; do
          ifconfig $ETH "$CLIENT" netmask "$MASK"
-         route add default gw "$GW"
-         echo nameserver "$GW" >> /etc/resolv.conf
+         ip -4 route add defafult via $GW dev $ETH
          echo nameserver "$SERVER" >> /etc/resolv.conf
+         echo nameserver "$GW" >> /etc/resolv.conf
       done
    fi
 }
-
 
 # Initialize network IP address
 # either static from ip=bootparameter, or from DHCP
@@ -460,14 +473,14 @@ init_network_ip()
       # set IP address as given by boot paramter
       echo "$IP" | while IFS=":" read CLIENT SERVER GW MASK; do
          ifconfig $ETH "$CLIENT" netmask "$MASK"
-         route add default gw "$GW"
-         echo nameserver "$GW" >> /etc/resolv.conf
+         ip -4 route add default via $GW dev $ETH
          echo nameserver "$SERVER" >> /etc/resolv.conf
+         echo nameserver "$GW" >> /etc/resolv.conf
       done
    else
       # if client ip is unknown, try to get a DHCP lease
-      ifconfig $ETH up
-      echo -e '#!/bin/sh\nif [ "$1" != "bound" ]; then exit; fi\nifconfig $interface $ip netmask $subnet\nroute add default gw $router\necho nameserver $dns >>/etc/resolv.conf' >$SCRIPT
+      ip link set $ETH up
+      echo -e '#!/bin/sh\nif [ "$1" != "bound" ]; then exit; fi\nifconfig $interface $ip netmask $subnet\nip -4 route add default via $router dev $interface\necho nameserver $dns >>/etc/resolv.conf' >$SCRIPT
       chmod a+x $SCRIPT
       udhcpc -i $ETH -n -s $SCRIPT -q >/dev/null
    fi
@@ -502,13 +515,26 @@ mount_data_http()
 }
 
 
+# stdin = files to get
+# $1 = server
+# $2 = destination directory
+#
+tftp_mget()
+{
+   while read FNAME; do
+      echo "* $FNAME ..." >&2
+      tftp -b 1486 -g -r "$FNAME" -l "$2/$FNAME" "$1"
+   done
+}
+
+
 # Download data from tftp
 # $1 = target (store downloaded files there)
 #
 download_data_pxe()
 {
    debug_log "download_data_pxe" "$*"
-   local IP CMD CLIENT SERVER GW MASK PORT PROTOCOL
+   local IP CMD CLIENT SERVER GW MASK PORT PROTOCOL JOBS
 
    mkdir -p "$1/$LIVEKITNAME"
    IP="$(cmdline_value ip)"
@@ -528,19 +554,22 @@ download_data_pxe()
       if [ $? -ne 0 ]; then
          echo "Error downloading from http://$SERVER:$PORT, trying TFTP" >&2
          PROTOCOL=tftp
-         tftp -g -r PXEFILELIST -l "$1/PXEFILELIST" $SERVER
+         echo PXEFILELIST | tftp_mget "$SERVER" "$1"
       fi
 
       echo "* Downloading files from the list" >&2
 
-      cat "$1/PXEFILELIST" | while read FILE; do
-         if [ "$PROTOCOL" = "http" ]; then
-            wget -O "$1/$LIVEKITNAME/$FILE" "http://$SERVER:$PORT/$FILE"
-         else
-            echo "* $FILE ..." >&2
-            tftp -g -r $FILE -l "$1/$LIVEKITNAME/$FILE" $SERVER
-         fi
-      done
+      if [ "$PROTOCOL" = "http" ]; then
+         cat "$1/PXEFILELIST" | while read FILE; do
+            wget -O "$1/$LIVEKITNAME/$(basename $FILE)" "http://$SERVER:$PORT/$FILE"
+         done
+      else
+         JOBS=3
+         for i in $(seq 1 $JOBS); do
+            awk "NR % $JOBS == $i-1" "$1/PXEFILELIST" | tftp_mget "$SERVER" "$1/$LIVEKITNAME" &
+         done
+         wait
+      fi
    done
 
    echo "$1/$LIVEKITNAME"
@@ -723,6 +752,26 @@ copy_rootcopy_content()
 }
 
 
+# Run user custom preinit script if it exists
+# $1 = data directory
+# $2 = union directory
+user_preinit()
+{
+   debug_log "user_preinit" "$*"
+
+   local SRC
+
+   SRC="$1/rootcopy/run/preinit.sh"
+
+   if [ "$(ls -1 "$SRC" 2>/dev/null)" != "" ]; then
+      echo_green_star
+      echo "Executing user custom preinit..."
+      debug_log "Executing user custom preinit [$SRC]"
+      . "$SRC" "$2"
+   fi
+}
+
+
 # Copy data to RAM if requested
 # $1 = live data directory
 # $2 = changes directory
@@ -792,26 +841,36 @@ sortmod()
 
 
 # Mount squashfs filesystem bundles
-# and add them to union
 # $1 = directory where to search for bundles
 # $2 = directory where to mount bundles
-# $3 = directory where union is mounted
-#
-union_append_bundles()
+mount_bundles()
 {
-   debug_log "union_append_bundles" "$*"
-
-   local BUN
-
    echo_green_star
-   echo "Adding bundles to union"
+   echo "Mounting bundles"
    ( ls -1 "$1" | sort -n ; cd "$1" ; find modules/ 2>/dev/null | sortmod | filter_load) | grep '[.]'$BEXT'$' | filter_noload | while read BUNDLE; do
       echo "* $BUNDLE"
       BUN="$(basename "$BUNDLE")"
       mkdir -p "$2/$BUN"
       mount -o loop,ro -t squashfs "$1/$BUNDLE" "$2/$BUN"
-      mount -o remount,add:1:"$2/$BUN" aufs "$3"
    done
+}
+
+
+# Add mounted bundles to aufs union
+# $1 = directory where bundles are mounted
+# $2 = directory where union is mounted
+#
+union_append_bundles()
+{
+   debug_log "union_append_bundles" "$*"
+
+   if aufs_is_supported >/dev/null; then
+      echo_green_star
+      echo "Adding bundles to union"
+      find "$1" -mindepth 1 -maxdepth 1 | sortmod | while read BUNDLE; do
+         mount -o remount,add:1:"$BUNDLE" aufs "$2"
+      done
+   fi
 }
 
 
@@ -899,13 +958,13 @@ change_root()
 
    mkdir -p run
    mount -t tmpfs tmpfs run
-   mkdir -p run/initramfs      
+   mkdir -p run/initramfs
    mkdir -p run/sshd
    mount -n -o remount,rw aufs .
    pivot_root . run/initramfs
 
    #if [ "$(ls -A run/initramfs/memory/data/${LIVEKITNAME}/configs/)" ]; then
-   #	   cp -Rp run/initramfs/memory/data/${LIVEKITNAME}/configs/* /   
+   #      cp -Rp run/initramfs/memory/data/${LIVEKITNAME}/configs/* /
    #fi
 
    hostname "$(cat /etc/hostname)"

@@ -94,7 +94,7 @@ check process kamailio with pidfile /var/run/kamailio/kamailio.pid
     stop  program = "/etc/init.d/kamailio stop"
     if 5 restarts within 5 cycles then timeout
 
-check process rtpengine with pidfile /var/run/ngcp-rtpengine-daemon.pid
+check process rtpengine with pidfile /var/run/rtpengine-daemon.pid
     start program = "/etc/init.d/rtpengine start"
     stop  program = "/etc/init.d/rtpengine stop"
     if 5 restarts within 5 cycles then timeout

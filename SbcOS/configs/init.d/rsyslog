@@ -10,7 +10,7 @@ NAME=rsyslogd
 PIDFILE=/var/run/$NAME.pid
 #This is the command to be run, give the full pathname
 DAEMON=/usr/sbin/$NAME
-DAEMON_OPTS=""
+DAEMON_OPTS="-i /var/run/rsyslogd.pid"
 
 export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
 

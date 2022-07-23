@@ -13,9 +13,10 @@ case "$1" in
   start)
         echo -n "Starting: "$NAME
 	# add hostname to localhost - needed for testing env.
-	echo "127.0.1.1 $(cat /etc/hostname)" >> /etc/hosts
+	echo "127.0.0.1 $(cat /etc/hostname)" >> /etc/hosts
 	# start loopback device
-	ifconfig lo up
+	ip link set lo up
+	ip -4 addr add 127.0.0.1/8 dev lo
 	#make link
 	TZ='CET'; export TZ	
 	#echo -n "Starting DHCP..."
