@@ -5,7 +5,7 @@
 #===================================================================
 
 ### version for this script
-VERSION='5.2.0'
+VERSION='5.6.1'
 
 PATH=$PATH:/
 
@@ -38,8 +38,8 @@ fi
 if [ -f /etc/kamailio/kamctlrc ]; then
 	. /etc/kamailio/kamctlrc
 fi
-if [ -f /etc/kamailio//kamctlrc ]; then
-	. /etc/kamailio//kamctlrc
+if [ -f /etc/kamailio/kamctlrc ]; then
+	. /etc/kamailio/kamctlrc
 fi
 if [ -f ~/.kamctlrc ]; then
 	. ~/.kamctlrc
@@ -57,7 +57,7 @@ if [ -z "$MYDIR" ] ; then
 fi
 
 if [ -z "$MYLIBDIR" ] ; then
-	MYLIBDIR="/usr/lib64/kamailio//kamctl"
+	MYLIBDIR="/usr/lib/x86_64-linux-gnu/kamailio/kamctl"
 	if [ ! -d "$MYLIBDIR" ]; then
 		MYLIBDIR=$MYDIR
 	fi

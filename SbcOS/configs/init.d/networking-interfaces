@@ -2,7 +2,7 @@
 
 COUNTER=0
 CONFIGURE_INTERFACES=yes
-EXCLUDE_INTERFACES="eth8"
+EXCLUDE_INTERFACES="XXX"
 VERBOSE=no
 
 verbose=""
@@ -28,7 +28,7 @@ apply_network () {
 	/sbin/ifup -a --exclude=lo --exclude=${EXCLUDE_INTERFACES} ${verbose}
 	/sbin/route delete default gw 10.255.3.1	        
 
-        return 0;
+        return 0
 }
 
 ifup_hotplug () {
@@ -119,6 +119,5 @@ force-reload|restart)
         exit 1
         ;;
 esac
-
 
 exit 0

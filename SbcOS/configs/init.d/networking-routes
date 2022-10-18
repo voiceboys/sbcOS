@@ -45,7 +45,6 @@
 # Place, Suite 330, Boston, MA 02111-1307 USA
 #
 
-[ -x /sbin/route ] || exit 0
 ROUTEFILE="/etc/network/routes"
 # Abort (without error) if the configuration file does not exist
 [ ! -r "$ROUTEFILE" ] && exit 0
@@ -55,7 +54,6 @@ ROUTEFILE="/etc/network/routes"
 VERBOSITY=${VERBOSITY:-0}
 
 # Functions to read the route file and process it
-
 
 run_route() {
 	local COMMAND="route $*"

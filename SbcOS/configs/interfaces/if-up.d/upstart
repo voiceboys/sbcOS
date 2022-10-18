@@ -7,7 +7,7 @@ MARK_STATIC_NETWORK_EMITTED="/run/network/static-network-up-emitted"
 # Let's ignore meta entries (ifup -a)
 if [ "$METHOD" = "manual" ]; then
 	#echo "do up: $IFACE $METHOD"	
-	/sbin/ifconfig $IFACE up
+	/sbin/ip link set $IFACE up
 fi
 
 get_auto_interfaces() {

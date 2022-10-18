@@ -1,9 +1,21 @@
 #!/bin/sh
 
+if [ -e /usr/sbin/iptables-legacy ]; then
+        IPTABLES=/usr/sbin/iptables-legacy
+else
+        IPTABLES=/sbin/iptables
+fi
+
+if [ -e /usr/sbin/iptables-legacy-restore ]; then
+        IPTABLES_RESTORE=/usr/sbin/iptables-legacy-restore
+else
+        IPTABLES_RESTORE=/sbin/iptables-restore
+fi
+
 apply_firewall () {
 
         echo "Apply firewall"        
-	/sbin/iptables-restore < /etc/firewall.conf	
+	$IPTABLES_RESTORE < /etc/firewall.conf	
 
         return 0;
 }
@@ -11,7 +23,7 @@ apply_firewall () {
 flush_firewall() {
 
 	echo "Flushing firewall"
-	/sbin/iptables -F
+	$IPTABLES -F
 	return 0;
 }
 

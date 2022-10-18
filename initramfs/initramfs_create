@@ -8,8 +8,6 @@
 
 INITRAMFS=/tmp/$LIVEKITNAME-initramfs-$$
 
-echo "${INITRAMFS}.img" > /tmp/.initramfs
-
 # copy file to initramfs tree, including
 # all library dependencies (as shown by ldd)
 # $1 = file to copy (full path)
@@ -48,7 +46,6 @@ rm -Rf $INITRAMFS
 mkdir -p $INITRAMFS/{bin,dev/pts,etc,lib,lib64,mnt,proc,root,run,sys,tmp,usr,var/log}
 ln -s bin $INITRAMFS/sbin
 
-
 cp static/busybox $INITRAMFS/bin
 cp static/eject $INITRAMFS/bin
 cp static/mount.dynfilefs $INITRAMFS/bin/@mount.dynfilefs
@@ -57,7 +54,7 @@ cp static/mount.ntfs-3g $INITRAMFS/bin/@mount.ntfs-3g
 cp static/blkid $INITRAMFS/bin
 chmod a+x $INITRAMFS/bin/*
 
-$INITRAMFS/bin/busybox | grep , | grep -v Copyright | tr "," " " | while read LINE; do
+$INITRAMFS/bin/busybox --list | while read LINE; do
    for TOOL in $LINE; do
       if [ ! -e $INITRAMFS/bin/$TOOL ]; then
          ln -s busybox $INITRAMFS/bin/$TOOL
@@ -74,7 +71,7 @@ mknod $INITRAMFS/dev/tty2 c 4 2
 mknod $INITRAMFS/dev/tty3 c 4 3
 mknod $INITRAMFS/dev/tty4 c 4 4
 
-copy_including_deps /$LMK/kernel/fs/aufs
+copy_including_deps /$LMK/kernel/fs/overlayfs
 copy_including_deps /$LMK/kernel/fs/ext2
 copy_including_deps /$LMK/kernel/fs/ext3
 copy_including_deps /$LMK/kernel/fs/ext4
@@ -83,10 +80,9 @@ copy_including_deps /$LMK/kernel/fs/nls
 copy_including_deps /$LMK/kernel/fs/fuse
 copy_including_deps /$LMK/kernel/fs/isofs
 copy_including_deps /$LMK/kernel/fs/ntfs
-copy_including_deps /$LMK/kernel/fs/reiserfs
+#copy_including_deps /$LMK/kernel/fs/reiserfs
 copy_including_deps /$LMK/kernel/fs/squashfs
 copy_including_deps /$LMK/kernel/fs/overlayfs
-
 
 # crc32c is needed for ext4, but I don't know which one, add them all, they are small
 find /$LMK/kernel/ | grep crc32c | while read LINE; do
@@ -108,14 +104,6 @@ copy_including_deps /$LMK/kernel/drivers/hid/hid.*
 copy_including_deps /$LMK/kernel/drivers/hid/uhid.*
 copy_including_deps /$LMK/kernel/drivers/hid/hid-generic.*
 
-#Just for some wireless device. DEMO ONLY!
-copy_including_deps /$LMK/kernel/net/mac80211/mac80211.ko
-copy_including_deps /$LMK/kernel/net/wireless/cfg80211.ko
-copy_including_deps /$LMK/kernel/drivers/net/wireless/intel/iwlwifi/mvm/iwlmvm.ko
-copy_including_deps /$LMK/kernel/drivers/net/wireless/intel/iwlwifi/iwlwifi.ko
-#############################################################
-
-
 # disk and cdrom drivers
 copy_including_deps /$LMK/kernel/drivers/cdrom
 copy_including_deps /$LMK/kernel/drivers/scsi/sr_mod.*
@@ -123,6 +111,8 @@ copy_including_deps /$LMK/kernel/drivers/scsi/sd_mod.*
 copy_including_deps /$LMK/kernel/drivers/scsi/scsi_mod.*
 copy_including_deps /$LMK/kernel/drivers/scsi/sg.*
 copy_including_deps /$LMK/kernel/drivers/ata
+copy_including_deps /$LMK/kernel/drivers/nvme
+copy_including_deps /$LMK/kernel/drivers/mmc
 
 copy_including_deps /$LMK/kernel/net/netfilter
 copy_including_deps /$LMK/kernel/net/ipv4/netfilter
@@ -132,28 +122,27 @@ copy_including_deps /$LMK/kernel/net/ipv6/netfilter
 copy_including_deps /$LMK/kernel/net/ipv6/netfilter/ip*.*
 copy_including_deps /$LMK/kernel/net/ipv6/netfilter/nf*.*
 
-#
+# rtpengine
 if [ -f "modules/${KERNEL}/xt_RTPENGINE.ko" ]; then
-	echo "Module xt_RTPENGINE.ko exists copying to netfilter"
+	#echo "Module xt_RTPENGINE.ko exists copying to netfilter"
 	cp modules/${KERNEL}/xt_RTPENGINE.ko $INITRAMFS/$LMK/kernel/net/netfilter
-else 
-	echo "Module xt_RTPENGINE.ko doesnt exists try to compile first"
+else
+	#echo "Module xt_RTPENGINE.ko doesnt exists try to compile first"
 	cd "source/rtpengine-${RTPENGINE}/kernel-module"
 	make
 	cd ../../../
 	if [ ! -d "modules/${KERNEL}" ]; then
 		mkdir "modules/${KERNEL}"
 	fi
-		
-	if [ -f "source/rtpengine-${RTPENGINE}/kernel-module/xt_RTPENGINE.ko" ]; then
-	  	echo "Module xt_RTPENGINE.ko has been compiled! Copying..."
-	  	cp "source/rtpengine-${RTPENGINE}/kernel-module/xt_RTPENGINE.ko" modules/${KERNEL}/	  	
-        	cp modules/${KERNEL}/xt_RTPENGINE.ko $INITRAMFS/$LMK/kernel/net/netfilter
-	else 
-		echo "Module xt_RTPENGINE.ko has been not compiled. RTPEngine will work in userspace mode!. LOW PERFOMANCE!"
-	fi	
-fi
 
+	if [ -f "source/rtpengine-${RTPENGINE}/kernel-module/xt_RTPENGINE.ko" ]; then
+		#echo "Module xt_RTPENGINE.ko has been compiled! Copying..."
+		cp "source/rtpengine-${RTPENGINE}/kernel-module/xt_RTPENGINE.ko" modules/${KERNEL}/
+		cp modules/${KERNEL}/xt_RTPENGINE.ko $INITRAMFS/$LMK/kernel/net/netfilter
+	#else
+		#echo "Module xt_RTPENGINE.ko has been not compiled. RTPEngine will work in userspace mode!. LOW PERFOMANCE!"
+	fi
+fi
 
 # network support drivers
 if [ "$NETWORK" = "true" ]; then
@@ -191,4 +180,4 @@ find . -print | cpio -o -H newc 2>/dev/null | xz -f --extreme --check=crc32 >$IN
 echo $INITRAMFS.img
 
 cd ..
-#rm -Rf $INITRAMFS
+rm -Rf $INITRAMFS

@@ -68,13 +68,13 @@ check_exit_code() {
   fi
 }
 
-function extract_deb {
+extract_deb() {
   echo " | extact $1 to $2"
   DATAFILE=$(ar -t "$1" | grep data)
   ar -x "$1" $DATAFILE && tar -C $2 -xaf $DATAFILE && rm $DATAFILE
 } 
 
-function depcheck() {
+depcheck() {
   DEPVARIANT="$1"
   echo " | scan required packages for bin and lib files for variant $DEPVARIANT"
   for i in $(cat $CFGDIR/$DEPVARIANT/install.req); do
@@ -115,7 +115,7 @@ function depcheck() {
   rm $TMPDIR/main.install.tmp $TMPDIR/main.deps.tmp $TMPDIR/additional.deps*
 }
 
-function mkdir_if_missing() {
+mkdir_if_missing() {
     if [ ! -d "$1" ]; then
         echo " | create directory \"$1\""
         mkdir -p "$1"
@@ -123,14 +123,12 @@ function mkdir_if_missing() {
     fi
 }
 
-function init_pool() {
-
+init_pool() {
 	rm -rf $RFSDIR/rootfs
 	mkdir_if_missing $RFSDIR/rootfs
 }
 
 function init_rootfs() {
-
 	rm -rf $BASEDIR
 	mkdir_if_missing $IMGDIR
 	mkdir_if_missing $TMPDIR
@@ -142,7 +140,7 @@ function init_rootfs() {
 }
 
 
-function clean_multistrap() {
+clean_multistrap() {
 	echo "use parameter [-debian] for update builder" 
 	echo "-= build sbc-repository repository" | tee $LOGDIR/${SCRIPTNAME}_$BUILDDATE.echo
 
@@ -157,9 +155,8 @@ function clean_multistrap() {
 }
 
 
-function prebuild() {
-	
-	cp /etc/apt/trusted.gpg "${BOOTSTRAPDIR}/etc/apt"
+prebuild() {
+	cp -R /etc/apt/trusted.gpg.d "${BOOTSTRAPDIR}/etc/apt"
 	check_exit_code
 
 	cp $CFGDIR/multistrap-bootstrap-debian.conf $CFGDIR/multistrap-bootstrap-current.conf
@@ -186,14 +183,13 @@ function prebuild() {
 	reprepro --basedir $DEBDIR --confdir $CFGDIR includedeb sbc-repository $PACKAGES/telegraf/*.deb
 	check_exit_code
   
-	#echo " | import libuv packages into sbc-repository repository"
+	#echo " | import liagent packages into sbc-repository repository"
 	#reprepro --basedir $DEBDIR --confdir $CFGDIR includedeb sbc-repository $PACKAGES/liagent/packages/*.deb
 	#check_exit_code
 	echo " ! done."
 }
 
-function buildrootfs() {
-
+buildrootfs() {
 	rm -rf $RFSDIR/rootfs
 	mkdir_if_missing $RFSDIR/rootfs
 	rm $LOGDIR/install.lib.* $LOGDIR/install.deb.*
@@ -493,6 +489,21 @@ function buildrootfs() {
 	echo " | iproute2 configs"
 	install -m 755 $CFGDIR/iproute2/* $RFSDIR/rootfs/etc/iproute2/
 	check_exit_code
+
+	echo " | install approved shells list to new base rootfs"
+	install -m 644 $CFGDIR/shells $RFSDIR/rootfs/etc/shells
+	check_exit_code
+
+	if [ -e $RFSDIR/rootfs/usr/sbin/iptables-legacy ]; then
+		echo " | making legacy iptables primary"
+		pushd $RFSDIR/rootfs//usr/sbin > /dev/null 2>&1
+		rm -f *-nft*
+		ln -s iptables-legacy iptables
+		ln -s iptables-legacy-restore iptables-restore
+		ln -s ip6tables-legacy ip6tables
+		ln -s ip6tables-legacy-restore ip6tables-restore
+		popd > /dev/null 2>&1
+	fi
 
 	echo " | create ramdisk to install packages for squashfs"
 	mountpoint -q "$RFSDIR/squashfs" && umount "$RFSDIR/squashfs" -l
