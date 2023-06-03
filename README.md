@@ -1,3 +1,6 @@
+### sbcOS 2.0 
+the version is based on Linux alpine. Please check the branch version_2.0!!!!
+
 # <img src="https://user-images.githubusercontent.com/1423657/57624925-31f08780-7593-11e9-9e1e-2f876efa23ac.png" width=300 alt="sbcOS">
 
 **SBC-OS** is an open-source drop-in replacement for many existing commercial Session Border Controllers designed for performance and resource optimization
