@@ -23,71 +23,126 @@
 ### Optional Features
 NB! For the (Lawful Interception) LI, please contact info@qxip.net
 
-### Deployment
-#### USB Stick
-for everybody who has got a USB stick on KW 2019: the SBC-OS has been
-installed already. You can boot your server or laptop using this stick
-```
-user: root
-password: plusnet
 
-```
+# sbcOS PXE/Netboot Documentation
 
-enjoy!
+## 📅 Overview
 
-#### DIY
-In the repository you will find an ISO directory that contains the files to generate an ISO image, 
-so just go there and run a shell script inside and to generate an ISO image or copy the data 
-to your USB stick and go to sbc/boot and run bootinst.sh. The script will make your USB stick bootable. 
-Dont forget to install genisoimage!
+This document describes the PXE network boot architecture of **sbcOS v2.0**. The system is based on Alpine Linux and is booted via iPXE. Dynamic configuration is handled by a server-side PHP script (`boot.php`) that provides tailored boot parameters and overlay files for each host.
 
+---
 
-How to build the system manualy:
+## 🚀 Boot Architecture Summary
 
-The system requires Ubuntu 18 or Debian 9!
+1. PXE/iPXE boot → iPXE script is loaded.
+2. iPXE fetches `boot.php` with MAC/hostname as parameters.
+3. `boot.php` dynamically generates kernel, initramfs, and boot options.
+4. Alpine Linux is started with custom packages and configuration (`apkovl`).
 
-Required packages (Debian 9 / Ubuntu 18)
+---
 
-```
-apt-get install whois dirmngr multistrap reprepro binutils squashfs-tools genisoimage make linux-headers-$(uname -r) zip aufs-dkms aufs-tools aufs-dev
-```
+## 🌐 PXE and TFTP Setup
 
-clone the repository, go to SbcOS and run:
+A typical PXE environment consists of:
 
-```
-./build_rootfs.sh
+* **DHCP server**: provides network boot instructions.
+* **TFTP server**: serves iPXE binaries and configuration.
+* **Web server (HTTP)**: delivers `boot.php`, overlays, and packages.
+
+Example DHCP configuration:
+
+```dhcpd
+filename "ipxe.efi";               # or pxelinux.0
+next-server 10.255.3.2;            # TFTP server IP
 ```
 
-dont forget to install: multistrap, reprepo, whois (mkpasswd), genisoimage
+Place the iPXE binary and `undionly.kpxe` or `ipxe.efi` in `/srv/tftp/`.
 
-The script will create a rootfs squashfs image.
+---
 
-After go to root directory and run script:
+## 🌐 iPXE Example
 
-```
-./build
+```ipxe
+#!ipxe
 
-```
+echo +----- NETBOOT ----------------------------------------------
+echo |hostname: ${hostname}, next-server: ${next-server}
+echo |mac.....: ${net0/mac} /
+echo +------------------------------------------------------------
 
-it will generate two directories in your /tmp:
-sbc-data-XXXX
-sbc-initrfs-XXXX
+goto booturl
 
-and two scripts: that make an ISO image for you 
-
-
-Important! Please be sure that your /vmlinuz is pointing to the same version of kernel
-that runs now!
-
-```
-root@linux:sbcOS# uname -r
-4.9.0-8-amd64
-root@inux:sbcOS# ls -l /vmlinuz
-lrwxrwxrwx 1 root root 26 May  5 23:20 /vmlinuz -> boot/vmlinuz-4.9.0-8-amd64
-
+:booturl
+chain http://10.255.3.2/boot.php?mac=${net0/mac}&hostname=${hostname}
 ```
 
-If you have any question, dont hesistate contact us!
+---
 
-Thanks Tomas M. <http://www.linux-live.org> for initramfs scripts!
+## 🔧 Example Output from `boot.php`
+
+```ipxe
+kernel http://10.255.3.2/alpine/v3.11.6/releases/x86_64/netboot-3.11.6/vmlinuz-lts \
+  modules=loop,squashfs quiet nomodeset alpine_repo=http://10.255.3.2/alpine/v3.11.6/main \
+  pkgs=bonding,coreutils,... ssh_key=yes \
+  modloop=http://10.255.3.2/alpine/.../modloop-lts \
+  rootflags=size=6G \
+  modules=loop,squshfs,igb,e1000e ip=dhcp::::dproxy3.fra:eth4: \
+  console=ttyS1,115200n8r console=tty0 \
+  apkovl=http://10.255.3.2/boot-config/a0:36:9f:e7:6a:e2/config.tar.gz
+initrd http://10.255.3.2/alpine/.../initramfs-lts
+boot
+```
+
+---
+
+## 📚 Parameter Description
+
+| Parameter     | Description                                      |
+| ------------- | ------------------------------------------------ |
+| `mac`         | MAC address of the client                        |
+| `hostname`    | Hostname (provided by DHCP or iPXE)              |
+| `apkovl`      | Alpine overlay archive with custom `/etc` config |
+| `pkgs`        | Alpine packages to install at boot time          |
+| `modloop`     | Kernel modules image                             |
+| `alpine_repo` | Alpine package repository                        |
+| `console`     | Active consoles (e.g., serial, tty0)             |
+| `ssh_key`     | Enables SSH access on first boot                 |
+
+---
+
+## 🌐 Server-Side Logic of `boot.php`
+
+The PHP script performs the following:
+
+1. Retrieves MAC/hostname from GET parameters.
+2. Logs requests via `syslog()`.
+3. Assembles appropriate boot settings for the node.
+4. Outputs iPXE commands with `echo`.
+
+---
+
+## 🛡 Security & Scaling
+
+* Protect `boot.php` with IP filtering or tokens.
+* MAC-based routing allows per-host configuration.
+* Consider HTTPS and web server authentication.
+* Supports centralized monitoring/logging (e.g., rsyslog, telegraf).
+
+---
+
+## 🔁 Future Ideas
+
+* Integrate with a database for host inventory.
+* Web UI for editing node configurations.
+* Management API for automation.
+* Live debug mode for boot diagnostics.
+
+---
+
+## ✅ Conclusion
+
+`sbcOS` uses a flexible combination of PXE + iPXE + dynamic PHP to deploy and provision SBC nodes at scale. The architecture supports rapid deployment, centralized control, and robust configuration management.
+
+More details: [https://github.com/voiceboys/sbcOS/tree/version\_2.0](https://github.com/voiceboys/sbcOS/tree/version_2.0)
+
 
